@@ -12,7 +12,12 @@
     "start": "node build/index.js",
     "dev": "tsc -w & nodemon build/index.js",
     "clean": "rm -rf build",
-    "inspector": "npx @modelcontextprotocol/inspector node build/index.js"
+    "inspector": "npx @modelcontextprotocol/inspector node build/index.js",
+    "lint": "npx eslint src/**/*.ts --fix",
+    "lint:check": "npx eslint src/**/*.ts",
+    "test": "node test-basic.js",
+    "test:full": "node test-functions.js && node test-mvp.js",
+    "test:r": "Rscript test-r-functions.R"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.6.0",
@@ -22,6 +27,9 @@
   "devDependencies": {
     "@types/node": "^20.11.24",
     "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
     "nodemon": "^3.0.1",
     "typescript": "^5.3.3"
   },

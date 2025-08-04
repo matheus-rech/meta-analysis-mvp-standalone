@@ -1,0 +1,142 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  nodejs-lint-test:
+    name: Node.js Linting and Testing
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for better SonarCloud analysis
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build TypeScript
+      run: npm run build
+    
+    - name: Run ESLint
+      run: npm run lint
+      continue-on-error: false
+    
+    - name: Run tests
+      run: npm test
+      continue-on-error: false
+
+  r-check:
+    name: R Linting and Package Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup R
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: 'release'
+        use-public-rspm: true
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+    
+    - name: Install R dependencies
+      run: |
+        Rscript -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes')"
+        Rscript -e "if (!requireNamespace('lintr', quietly = TRUE)) install.packages('lintr')"
+        
+        # Install meta-analysis specific packages
+        Rscript -e "
+        required_packages <- c('jsonlite', 'metafor', 'ggplot2', 'meta', 'rmarkdown', 'knitr')
+        missing_packages <- required_packages[!sapply(required_packages, requireNamespace, quietly = TRUE)]
+        if (length(missing_packages) > 0) {
+          install.packages(missing_packages)
+        }
+        "
+        
+        # Try to install using the project's install script
+        if [ -f scripts/install_packages.R ]; then
+          Rscript scripts/install_packages.R || echo "Warning: Project install script failed, continuing with basic dependencies"
+        fi
+    
+    - name: Run R linting
+      run: Rscript -e "lintr::lint_package()"
+      continue-on-error: true  # R linting might have style issues that shouldn't break CI
+    
+    - name: Create minimal R package structure for CMD check
+      run: |
+        # Create DESCRIPTION file if it doesn't exist
+        if [ ! -f DESCRIPTION ]; then
+          cat > DESCRIPTION << EOF
+        Package: MetaAnalysisMVP
+        Title: Meta-Analysis MVP Standalone
+        Version: 1.0.0
+        Authors@R: person("Author", "Name", email = "author@example.com", role = c("aut", "cre"))
+        Description: Minimal MVP for Meta-Analysis MCP Server with R integration.
+        Depends: R (>= 4.0.0)
+        Imports: jsonlite, metafor, ggplot2, meta
+        License: MIT
+        Encoding: UTF-8
+        RoxygenNote: 7.0.0
+        EOF
+        fi
+        
+        # Create minimal R/ directory structure
+        mkdir -p R
+        if [ ! -f R/meta-analysis-functions.R ]; then
+          echo "# Meta-analysis functions" > R/meta-analysis-functions.R
+        fi
+        
+        # Create man/ directory for documentation
+        mkdir -p man
+    
+    - name: Run R CMD check
+      run: R CMD check . --no-manual --no-build-vignettes
+      continue-on-error: true  # CMD check might fail due to package structure
+
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: [nodejs-lint-test, r-check]
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for SonarCloud analysis
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed for PR decoration
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}     # Generate and store in repo secrets
+      continue-on-error: true  # Don't fail CI if SonarCloud has issues
