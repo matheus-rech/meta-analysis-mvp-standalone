@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 
 /**
  * Basic unit tests that don't require R environment
