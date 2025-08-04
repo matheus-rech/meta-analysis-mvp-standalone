@@ -79,7 +79,7 @@ export class SessionManager {
       const sessionFile = path.join(sessionPath, 'session.json');
       const data = await fs.readFile(sessionFile, 'utf-8');
       return JSON.parse(data);
-    } catch (error) {
+    } catch {
       throw new SessionError(`Session not found: ${sessionId}`);
     }
   }
