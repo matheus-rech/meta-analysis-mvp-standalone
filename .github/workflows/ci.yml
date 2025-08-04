@@ -41,11 +41,15 @@ jobs:
         if (!require('lintr', quietly = TRUE)) {
           install.packages('lintr', repos = 'https://cloud.r-project.org/')
         }
-        lintr::lint_package()
+        r_files <- list.files('scripts', pattern = '\\.R$', full.names = TRUE)
+        for (file in r_files) {
+          cat("Linting:", file, "\n")
+          lintr::lint(file)
+        }
       shell: Rscript {0}
       
     - name: Claude Code Action
       uses: anthropics/claude-code-action@v1
-      if: always()
+      if: always() && secrets.ANTHROPIC_API_KEY != ''
       with:
         api-key: ${{ secrets.ANTHROPIC_API_KEY }}

@@ -6,7 +6,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import * as path from "path";
+
 import config from "./config.js";
 import { executeRScript, cleanupRProcesses } from "./r-executor.js";
 import { sessionManager } from "./session-manager.js";
