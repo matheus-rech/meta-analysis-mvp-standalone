@@ -50,6 +50,5 @@ jobs:
       
     - name: Claude Code Action
       uses: anthropics/claude-code-action@v1
-      if: always() && secrets.ANTHROPIC_API_KEY != ''
       with:
         api-key: ${{ secrets.ANTHROPIC_API_KEY }}
