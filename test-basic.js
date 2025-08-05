@@ -4,7 +4,7 @@
  * These tests focus on the Node.js/TypeScript components
  */
 
-import { readFileSync, statSync } from 'fs';
+const { readFileSync, statSync } = require('fs');
 
 console.log('=== Meta-Analysis MVP - Basic Unit Tests ===\n');
 
