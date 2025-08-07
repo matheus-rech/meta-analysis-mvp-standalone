@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  meta-analysis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      cache_from:
+        - meta-analysis-mvp:latest
+    image: meta-analysis-mvp:latest
+    container_name: meta-analysis-mvp
+    
+    # Environment variables
+    environment:
+      - NODE_ENV=production
+      - SESSIONS_DIR=/app/sessions
+      - SCRIPTS_DIR=/app/scripts
+      - NODE_OPTIONS=--max-old-space-size=2048
+    
+    # Volume mounts for persistent data
+    volumes:
+      - ./sessions:/app/sessions
+      - ./test-data:/app/test-data:ro  # Read-only mount for test data
+      
+    # Port mapping (for future HTTP interface)
+    ports:
+      - "3000:3000"
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "/app/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # Set to true in production if possible
+    
+    # Network
+    networks:
+      - meta-analysis-network
+
+  # Optional: Add a development container with hot-reload
+  meta-analysis-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev  # We'll create this if needed
+      cache_from:
+        - meta-analysis-mvp:dev
+    image: meta-analysis-mvp:dev
+    container_name: meta-analysis-mvp-dev
+    profiles:
+      - dev
+    environment:
+      - NODE_ENV=development
+      - SESSIONS_DIR=/app/sessions
+      - SCRIPTS_DIR=/app/scripts
+    volumes:
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+      - ./sessions:/app/sessions
+      - ./test-data:/app/test-data
+    ports:
+      - "3001:3000"
+    command: npm run dev
+    networks:
+      - meta-analysis-network
+
+networks:
+  meta-analysis-network:
+    driver: bridge
+
+volumes:
+  sessions:
+    driver: local

@@ -1,5 +1,11 @@
 # Meta-Analysis MVP
 
+![CI/CD Pipeline](https://github.com/YOUR_USERNAME/meta-analysis-mvp/actions/workflows/ci.yml/badge.svg)
+![Docker Build](https://github.com/YOUR_USERNAME/meta-analysis-mvp/actions/workflows/docker-build.yml/badge.svg)
+![Docker Pulls](https://img.shields.io/docker/pulls/YOUR_USERNAME/meta-analysis-mvp)
+![Docker Image Size](https://img.shields.io/docker/image-size/YOUR_USERNAME/meta-analysis-mvp)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+
 A minimal, functional MVP for running meta-analysis through the Model Context Protocol (MCP). This simplified version removes all enterprise complexity while preserving the core functionality for conducting complete meta-analyses.
 
 ## Features

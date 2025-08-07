@@ -1,79 +1,60 @@
-# Git
-.git
-.gitignore
-.gitattributes
-
-# Node
-node_modules
+# Node modules and build artifacts
+node_modules/
+build/
+dist/
+*.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-.npm
-.yarn
 
-# TypeScript
-*.tsbuildinfo
-dist
-build
-out
+# Session data
+sessions/
 
-# Environment files
+# Test files and outputs
+test-*.js
+test-*.R
+test-data/
+test-output/
+*.test.js
+*.spec.js
+
+# Development files
 .env
-.env.*
-!.env.example
-
-# IDE
-.vscode
-.idea
+.env.local
+.env.*.local
+.vscode/
+.idea/
 *.swp
 *.swo
 *~
 .DS_Store
 
-# Testing
-coverage
-.nyc_output
-test-results
+# Git files
+.git/
+.gitignore
+.github/
 
 # Documentation
 *.md
-docs
-README*
-LICENSE*
-CHANGELOG*
+!README.md
+docs/
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
 
 # CI/CD
-.github
 .gitlab-ci.yml
 .travis.yml
+.circleci/
 
-# Development files
-*.log
-*.pid
-*.seed
-*.pid.lock
+# Coverage reports
+coverage/
+.nyc_output/
 
-# Temporary files
-tmp
-temp
-*.tmp
+# Editor directories
+.vscode/
+.idea/
 
-# Project specific
-uploads
-downloads
-*.db
-*.sqlite
-
-# Docker
-.dockerignore
-Dockerfile*
-docker-compose*
-
-# Cursor specific  
-.cursor
-
-# Note: Since this Dockerfile is for background agents,
-# the code will be cloned by the agent, not copied during build.
-# This .dockerignore is a safety measure to ensure nothing
-# gets accidentally copied if the Dockerfile is modified later.
+# OS files
+Thumbs.db
+.DS_Store
