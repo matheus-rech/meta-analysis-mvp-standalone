@@ -5,8 +5,8 @@ A minimal, functional MVP for running meta-analysis through the Model Context Pr
 ## Quick Start
 
 ```bash
-docker pull YOUR_USERNAME/meta-analysis-mvp:latest
-docker run -it --rm -v $(pwd)/sessions:/app/sessions YOUR_USERNAME/meta-analysis-mvp:latest
+docker pull mmrech/meta-analysis-mvp:latest
+docker run -it --rm -v $(pwd)/sessions:/app/sessions mmrech/meta-analysis-mvp:latest
 ```
 
 ## Available Tags
@@ -52,7 +52,7 @@ docker inspect --format='{{.State.Health.Status}}' <container_id>
 
 ## Source Code
 
-GitHub: [https://github.com/YOUR_USERNAME/meta-analysis-mvp](https://github.com/YOUR_USERNAME/meta-analysis-mvp)
+GitHub: [https://github.com/mmrech/meta-analysis-mvp](https://github.com/mmrech/meta-analysis-mvp)
 
 ## License
 
