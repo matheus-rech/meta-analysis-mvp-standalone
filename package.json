@@ -1,0 +1,36 @@
+{
+  "name": "meta-analysis-mvp",
+  "version": "1.0.0",
+  "description": "Minimal MVP for Meta-Analysis MCP Server",
+  "type": "module",
+  "main": "build/index.js",
+  "bin": {
+    "meta-analysis-mvp": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "dev": "tsc -w & nodemon build/index.js",
+    "clean": "rm -rf build",
+    "lint": "eslint src/**/*.ts",
+    "inspector": "npx @modelcontextprotocol/inspector node build/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "dotenv": "^16.3.1",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "@types/node": "^20.11.24",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9.32.0",
+    "nodemon": "^3.0.1",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "dockerfile": ".cursor/Dockerfile",
+  "name": "meta-analysis-mvp",
+  "description": "Environment for meta-analysis MVP with R and Node.js support",
+  "backgroundAgent": true
+}
