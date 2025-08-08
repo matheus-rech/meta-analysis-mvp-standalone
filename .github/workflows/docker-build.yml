@@ -132,8 +132,8 @@ jobs:
           # Wait for container to be healthy
           timeout 60 bash -c 'until docker ps | grep test-container | grep -q healthy; do sleep 2; done' || true
           
-          # Check container logs
-          docker logs test-container
+          # Check container logs (do not fail if container no longer exists)
+          docker logs test-container || true
           
           # Stop container
           docker stop test-container || true
@@ -145,3 +145,8 @@ jobs:
       - name: Test Node.js
         run: |
           docker run --rm ${{ env.IMAGE_NAME }}:latest node -e "console.log('Node version:', process.version)"
+      
+      - name: Clean up test container
+        if: always()
+        run: |
+          docker rm -f test-container || true

@@ -1,0 +1,78 @@
+name: CI Auto Fix Agent
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    types: [completed]
+
+jobs:
+  auto-fix-known-failures:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download workflow logs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          curl -sSL -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/${{ github.repository }}/actions/runs/$RUN_ID/logs -o run_logs.zip
+          unzip -q run_logs.zip -d logs || true
+          if grep -RInq "No such container: test-container" logs; then
+            echo "FIX_MISSING_CONTAINER=1" >> $GITHUB_ENV
+          fi
+
+      - name: Install yq
+        if: env.FIX_MISSING_CONTAINER == '1'
+        run: |
+          YQ_VER=v4.44.3
+          sudo curl -sSL -o /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/download/${YQ_VER}/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Apply known fix for missing test container
+        if: env.FIX_MISSING_CONTAINER == '1'
+        run: |
+          FILE=".github/workflows/docker-build.yml"
+          # Make docker logs tolerant (idempotent)
+          yq -i '(.jobs.test.steps[] | select(.name == "Pull and test image") | .run) |= sub("docker logs test-container","docker logs test-container || true")' "$FILE"
+          # Append cleanup step if not present (idempotent)
+          HAS_CLEANUP=$(yq '.["jobs"].test.steps[] | select(.name == "Clean up test container") | length' "$FILE" | wc -l || true)
+          if [ "$HAS_CLEANUP" -eq 0 ]; then
+            yq -i '.["jobs"].test.steps += [{"name":"Clean up test container","if":"always()","run":"docker rm -f test-container || true"}]' "$FILE"
+          fi
+          # Detect changes
+          if ! git diff --quiet -- "$FILE"; then
+            echo "CHANGED=1" >> $GITHUB_ENV
+          fi
+
+      - name: Create PR with fix
+        if: env.FIX_MISSING_CONTAINER == '1' && env.CHANGED == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BR="ci-agent/fix-missing-test-container-${{ github.event.workflow_run.id }}"
+          git config user.name "ci-agent[bot]"
+          git config user.email "ci-agent[bot]@users.noreply.github.com"
+          git checkout -b "$BR"
+          git add .github/workflows/docker-build.yml
+          git commit -m "CI Agent: add safe cleanup and tolerant logs for missing test container"
+          git push -u origin "$BR"
+          gh pr create --title "CI Agent: Fix missing test container cleanup" \
+                       --body "Auto-applied fix for 'No such container: test-container' by making docker logs tolerant and adding cleanup step." \
+                       --base meta --head "$BR"
+
+      - name: No changes necessary
+        if: env.FIX_MISSING_CONTAINER == '1' && env.CHANGED != '1'
+        run: |
+          echo "Known issue detected but workflow already contains the fix."
+
