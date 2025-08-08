@@ -1,0 +1,33 @@
+{
+  "dockerfile": ".cursor/Dockerfile",
+  "name": "meta-analysis-mvp",
+  "description": "Environment for meta-analysis MVP with R and Node.js support",
+  "backgroundAgent": true,
+  "tasks": [
+    {
+      "name": "meta-analysis-full",
+      "description": "Perform a complete meta-analysis on test-data/simulated-meta-analysis.csv including forest plot, funnel plot, and heterogeneity assessment",
+      "language": "R",
+      "script": "scripts/run_meta_analysis.R",
+      "args": [
+        "--input",
+        "test-data/simulated-meta-analysis.csv",
+        "--output-forest",
+        "output/forest_plot.png",
+        "--output-funnel",
+        "output/funnel_plot.png",
+        "--output-summary",
+        "output/meta_analysis_summary.json"
+      ],
+      "outputs": [
+        "output/forest_plot.png",
+        "output/funnel_plot.png",
+        "output/meta_analysis_summary.json"
+      ]
+    }
+  ],
+  "build": {
+    "context": ".",
+    "dockerfile": "Dockerfile"
+  }
+}
