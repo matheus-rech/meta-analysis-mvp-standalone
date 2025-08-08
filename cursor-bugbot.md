@@ -1,63 +1,90 @@
 # Cursor BugBot Configuration
 
-## Purpose
-Keep the meta-analysis MCP server healthy by automatically fixing failing checks, addressing PR review comments, and maintaining build reliability across Node + R + Docker.
+This file configures BugBot to automatically fix CI issues, address PR feedback, and keep the Meta-Analysis MCP server healthy.
 
-## Scope of work (prioritized)
-1. Fix failing CI (Docker build, Node build, R scripts) and broken tests
-2. Respond to PR review comments with concrete code edits
-3. Maintain repository hygiene (paths, scripts, docs) without altering project intent
+## Goals
+- Keep CI green across Node + R + Docker
+- Address PR review comments with minimal, targeted edits
+- Preserve project architecture and decision rules
 
-## High‑priority paths
-- src/** (TypeScript MCP server)
-- scripts/** (R tools, adapters, entry)
-- templates/** (Rmd report templates)
-- Dockerfile, .github/workflows/**
-- README.md, docs/**
+## Triggers
+- CI failures on PRs or default branch
+- New/updated review comments requesting changes
+- Security or dependency alerts that break the build
 
-## Low‑priority / avoid
-- sessions/** (generated)
-- test-output/**, results artifacts
-- Large binaries (keep out of git; rely on Git LFS patterns)
+## Repository structure (authoritative)
+- `src/` TypeScript MCP server
+- `scripts/entry/` R dispatcher (`mcp_tools.R`)
+- `scripts/tools/` R tool implementations
+- `scripts/adapters/` R statistical adapters (meta/metafor)
+- `templates/` Rmd report templates
+- `.github/workflows/` CI workflows
+- `Dockerfile`, `README.md`, `docs/decision-rules.md`
+
+## Priorities (in order)
+1) Fix failing CI (Docker build, Node build, R scripts/tests)
+2) Address PR review comments with concrete code edits
+3) Small hygiene fixes (paths, typos) if clearly beneficial
 
 ## Guardrails
-- Do not change git config, secrets, or branch protections
-- Do not commit large binaries; honor .gitattributes (png/pdf/docx/rds/xlsx under LFS)
-- Prefer minimal, targeted edits; keep code style and structure
-- No long‑running commands (watchers/servers)
+- Do NOT change git config, secrets, or branch protections
+- Do NOT commit large binaries; honor `.gitattributes` (png/pdf/docx/rds/xlsx via LFS)
+- Prefer minimal diffs; keep existing code style/structure
+- No long‑running commands (dev servers, watchers)
 
-## Build and test commands
-- Node/TypeScript
-  - npm ci
-  - npm run build
-  - node test-mvp.js
-- R scripts (non-interactive)
-  - Rscript --version
-  - Rscript scripts/entry/mcp_tools.R health_check "{}" .  (expect JSON error or success)
-  - Rscript tests/r/<file>.R  (when present)
-- Docker (local validation only; optional if runner supports Docker)
-  - docker build -t meta-analysis-mvp:local .
+## Commands (use these to reproduce/fix)
+### Node / TypeScript
+- `npm ci`
+- `npm run build`
+- `node test-mvp.js`
 
-## Tactics / decision rules
-- If MCP tool routing fails: ensure src/config.ts points to scripts/entry/mcp_tools.R; verify source paths inside dispatcher
-- If uploads fail for Excel: check readxl, base64 handling, and sheet selection logic
-- If R package missing: prefer adding binary r2u package to Dockerfile rather than install.packages at runtime
-- If forest plots fail: confirm meta_adapter method selection per effect measure (PROP/OR/RR/MD/SMD/MEAN)
-- If CI timeouts: favor rocker/r2u base and Buildx cache, avoid TeX PDF generation in CI
+### R scripts (non-interactive smoke)
+- `Rscript --version`
+- `Rscript scripts/entry/mcp_tools.R health_check "{}" .` (ignore error if unknown tool; existence proves R works)
+- `Rscript tests/r/<file>.R` (when present)
+
+### Docker (optional, if runner supports)
+- `docker build -t meta-analysis-mvp:local .`
+
+## CI expectations
+- Use rocker/r2u base (binary R packages) and Buildx cache
+- Avoid TeX/PDF generation in CI; prefer HTML
+- Install required R packages in Dockerfile: meta, metafor, jsonlite, ggplot2, rmarkdown, knitr, readxl, base64enc, DT
+
+## Playbooks
+### A. MCP routing broken
+1. Ensure `src/config.ts` returns `scripts/entry/mcp_tools.R`
+2. Verify dispatcher sources `../tools` and `../adapters` with correct relative paths
+
+### B. Excel upload fails
+1. Check `readxl` presence (Dockerfile) and base64 decoding in `upload_data.R`
+2. Respect optional `sheet_name`; normalize columns; drop empty rows/cols
+
+### C. Forest plot errors
+1. Confirm adapter method selection per effect measure (PROP/OR/RR/MD/SMD/MEAN)
+2. For PROP, auto‑select sm (PFT/PLOGIT/PRAW) and use GLMM
+3. Honor `plot_options` overrides if provided
+
+### D. Effect size ingestion (metagen)
+1. Accept TE+seTE or derive from CI for ratio measures
+2. Default `method.tau = "REML"`; ensure studlab mapping
+
+### E. CI timeouts/build failures
+1. Ensure Dockerfile uses rocker/r2u and lists required R packages
+2. Ensure GH Actions uses Buildx cache and linux/amd64 only
 
 ## Review comment handling
-- When a reviewer flags an issue:
-  1) Reproduce locally using the commands above
-  2) Propose a minimal code change
-  3) Add/adjust tests when feasible
-  4) Link the commit diff in a reply comment summarizing the fix
+1. Reproduce locally
+2. Implement minimal fix
+3. Add/adjust tests where feasible
+4. Reply with rationale and link to the commit/lines changed
 
-## Style
-- TypeScript: keep code readable, add explicit types to interfaces/functions
-- R: keep functions pure, document with concise roxygen‑style headers
-- Docs: update docs/decision-rules.md and README.md when behavior changes
+## Style rules
+- TypeScript: explicit types on interfaces/exports; readable control flow
+- R: pure helpers; concise roxygen headers on exported functions
+- Docs: update `docs/decision-rules.md` and `README.md` for behavior changes
 
 ## Done criteria
-- CI green: Docker build success, Node build success, tests pass
-- PR comments addressed or followed up with rationale
-- No new large files committed outside LFS rules
+- CI green (Docker build, Node build, R scripts/tests)
+- All review comments addressed or explained
+- No large files committed outside LFS rules
