@@ -31,6 +31,9 @@ RUN apt-get update && \
       r-cran-ggplot2 \
       r-cran-rmarkdown \
       r-cran-knitr \
+      r-cran-readxl \
+      r-cran-base64enc \
+      r-cran-dt \
       pandoc && \
     rm -rf /var/lib/apt/lists/*
 
