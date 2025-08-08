@@ -112,6 +112,35 @@ upload_study_data <- function(args) {
   }
   session_config <- fromJSON(session_config_path)
   
+  # Heuristic column normalization for single-arm proportions
+  if (!is.null(session_config$effect_measure) && toupper(session_config$effect_measure) == "PROP") {
+    names(loaded_data) <- tolower(names(loaded_data))
+    # Map study identifiers
+    if (!"study" %in% names(loaded_data)) {
+      if ("study_id" %in% names(loaded_data)) loaded_data$study <- loaded_data$study_id
+      else if ("id" %in% names(loaded_data)) loaded_data$study <- loaded_data$id
+      else if ("author" %in% names(loaded_data)) loaded_data$study <- loaded_data$author
+    }
+    # Map events
+    if (!"events" %in% names(loaded_data)) {
+      for (candidate in c("event", "positives", "cases", "successes", "x")) {
+        if (candidate %in% names(loaded_data)) {
+          loaded_data$events <- loaded_data[[candidate]]
+          break
+        }
+      }
+    }
+    # Map sample size n
+    if (!"n" %in% names(loaded_data)) {
+      for (candidate in c("total", "sample_size", "n_total", "nobs", "size", "n")) {
+        if (candidate %in% names(loaded_data)) {
+          loaded_data$n <- loaded_data[[candidate]]
+          break
+        }
+      }
+    }
+  }
+  
   # Validate data structure based on effect measure
   validation_result <- validate_data_structure(loaded_data, session_config$effect_measure)
   if (!validation_result$valid) {
@@ -149,6 +178,8 @@ validate_data_structure <- function(data, effect_measure) {
     "MD" = c("study", "mean1", "sd1", "n1", "mean2", "sd2", "n2"),
     "SMD" = c("study", "mean1", "sd1", "n1", "mean2", "sd2", "n2"),
     "HR" = c("study", "hr", "se_hr"),
+    "PROP" = c("study", "events", "n"),
+    "MEAN" = c("study", "n", "mean", "sd"),
     stop("Unsupported effect measure: ", effect_measure)
   )
   
@@ -202,6 +233,17 @@ process_study_data <- function(data, session_config) {
       # For hazard ratios, we expect log HR and SE
       data$yi <- log(data$hr)
       data$vi <- data$se_hr^2
+      data
+    },
+    "PROP" = {
+      # Normalize event(s)/n column names
+      if (!"events" %in% names(data) && "event" %in% names(data)) data$events <- data$event
+      data$yi <- data$events / data$n
+      data$vi <- (data$yi * (1 - data$yi)) / pmax(data$n, 1)
+      data
+    },
+    "MEAN" = {
+      # Single-arm continuous: keep as-is; adapter will use metamean
       data
     },
     stop("Unsupported effect measure: ", effect_measure)

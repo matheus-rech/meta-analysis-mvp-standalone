@@ -14,12 +14,9 @@ A minimal, functional MVP for running meta-analysis through the Model Context Pr
 
 - Node.js 18+ 
 - R 4.0+ with the following packages:
-  - `meta`
-  - `metafor`
-  - `jsonlite`
-  - `ggplot2` (for plots)
-  - `rmarkdown` (for reports)
-  - `knitr` (for reports)
+  - `meta`, `metafor`, `jsonlite`
+  - `ggplot2` (for plots), `rmarkdown`, `knitr` (for reports)
+  - `readxl` (Excel import), `base64enc` (binary uploads), `DT` (report tables)
 
 ## Quick Start
 
@@ -30,7 +27,7 @@ A minimal, functional MVP for running meta-analysis through the Model Context Pr
 npm install
 
 # Install R packages (run in R console)
-install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr"))
+install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr", "readxl", "base64enc", "DT"))
 ```
 
 ### 2. Build the TypeScript Server
@@ -261,7 +258,7 @@ Rscript --version
 ### Missing R Packages
 Install required packages in R:
 ```R
-install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr"))
+install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr", "readxl", "base64enc", "DT"))
 ```
 
 ### Permission Issues

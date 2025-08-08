@@ -16,7 +16,7 @@ if (is.null(script_dir)) {
   }
 }
 
-source(file.path(script_dir, "meta_adapter.R"))
+source(file.path(script_dir, "../adapters", "meta_adapter.R"))
 
 assess_publication_bias <- function(args) {
   session_path <- args$session_path

@@ -26,7 +26,7 @@ const config = {
   
   // R script path
   rScriptPath: function(): string {
-    return path.join(this.scriptsDir, 'mcp_tools.R');
+    return path.join(this.scriptsDir, 'entry', 'mcp_tools.R');
   },
   
   // Ensure necessary directories exist
