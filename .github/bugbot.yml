@@ -1,0 +1,50 @@
+# BugBot rules for PR quality and safety
+# This file defines lightweight policy checks applied by .github/workflows/bugbot.yml
+
+rules:
+  # Enforce Conventional Commit-ish PR titles
+  pr_title:
+    allowed_prefixes: [feat, fix, docs, chore, refactor, test, ci]
+    require_scope: false
+
+  # Require CI workflows present
+  ci_presence:
+    required_workflows:
+      - .github/workflows/docker-ci.yml
+      - .github/workflows/ci.yml
+
+  # For changes under scripts/ or src/, require decision rules doc exists
+  decision_doc:
+    paths: [scripts/**, src/**]
+    require_file: docs/decision-rules.md
+
+  # Large files must be via LFS (or explicitly allowed)
+  large_files:
+    max_bytes: 5242880  # 5MB
+    lfs_patterns: ['*.png', '*.pdf', '*.docx', '*.rds', 'test-data/*.csv', '*.xlsx']
+
+  # Prevent accidental deletion of critical files
+  protect_files:
+    must_exist:
+      - scripts/entry/mcp_tools.R
+      - scripts/tools/perform_analysis.R
+      - scripts/tools/generate_forest_plot.R
+      - scripts/tools/assess_publication_bias.R
+      - scripts/tools/generate_report.R
+      - scripts/tools/upload_data.R
+      - scripts/adapters/meta_adapter.R
+      - src/index.ts
+      - src/r-executor.ts
+      - src/session-manager.ts
+      - src/config.ts
+
+  # Label suggestions by path
+  labels:
+    - label: 'R'
+      paths: ['scripts/**', 'templates/**']
+    - label: 'TypeScript'
+      paths: ['src/**']
+    - label: 'Docs'
+      paths: ['docs/**', 'README.md']
+    - label: 'CI'
+      paths: ['.github/workflows/**']

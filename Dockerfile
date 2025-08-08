@@ -13,6 +13,9 @@ COPY src ./src
 RUN npm run build
 
 # 2) Final image with R (binary packages) + Node
+
+# Use Ubuntu 24.04 r2u image (binary R packages)
+
 FROM rocker/r2u:24.04
 
 # Install Node.js 18 via NodeSource (ensures >=18)
