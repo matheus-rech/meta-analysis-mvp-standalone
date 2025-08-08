@@ -5,8 +5,8 @@ import { RScriptError, ValidationError } from './errors.js';
 // Maximum allowed JSON output size (10MB)
 const MAX_JSON_SIZE = 10 * 1024 * 1024;
 
-// Default timeout for R processes (30 seconds)
-const DEFAULT_TIMEOUT_MS = 30000;
+// Default timeout for R processes (45 seconds)
+const DEFAULT_TIMEOUT_MS = 45000;
 
 // Active R processes tracking for graceful shutdown
 const activeProcesses = new Set<ChildProcess>();

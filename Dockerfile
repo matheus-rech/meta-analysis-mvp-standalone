@@ -1,68 +1,59 @@
-# Multi-stage build for Meta-Analysis MVP
-FROM node:18-alpine AS builder
+# Multi-stage build for Meta-Analysis MVP (fast, cached)
+# 1) Build TypeScript with Node
+FROM node:18-bullseye AS builder
 
-# Install build dependencies
-RUN apk add --no-cache python3 make g++
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
-
-# Install dependencies
+# Install Node dependencies
+COPY package*.json tsconfig.json ./
 RUN npm ci
 
-# Copy source code
+# Copy source and build
 COPY src ./src
-
-# Build TypeScript
 RUN npm run build
 
-# Production image
-FROM r-base:4.3.2
+# 2) Final image with R (binary packages) + Node
+FROM rocker/r2u:4.3.2
 
-# Install Node.js
+# Install Node.js 18 via NodeSource (ensures >=18)
 RUN apt-get update && \
-    apt-get install -y curl && \
+    apt-get install -y --no-install-recommends curl ca-certificates gnupg && \
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    apt-get clean && \
+    apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# Install R packages
-RUN R -e "install.packages(c('meta', 'metafor', 'jsonlite', 'ggplot2', 'rmarkdown', 'knitr'), repos='https://cloud.r-project.org/')"
-
-# Install pandoc for report generation
+# Install R packages via apt (binary, fast) and pandoc for R Markdown
 RUN apt-get update && \
-    apt-get install -y pandoc && \
-    apt-get clean && \
+    apt-get install -y --no-install-recommends \
+      r-cran-meta \
+      r-cran-metafor \
+      r-cran-jsonlite \
+      r-cran-ggplot2 \
+      r-cran-rmarkdown \
+      r-cran-knitr \
+      pandoc && \
     rm -rf /var/lib/apt/lists/*
 
-# Create app directory
 WORKDIR /app
 
-# Copy built files from builder
+# Copy build artifacts and runtime deps
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/node_modules ./node_modules
 COPY package*.json ./
 
-# Copy scripts and create directories
+# Copy R scripts and templates
 COPY scripts ./scripts
-RUN mkdir -p sessions
+COPY templates ./templates
 
-# Set environment
-ENV NODE_ENV=production
-
-# Create non-root user
-RUN useradd -m -s /bin/bash metaanalysis && \
+# Prepare sessions directory
+RUN mkdir -p sessions && \
+    useradd -m -s /bin/bash metaanalysis && \
     chown -R metaanalysis:metaanalysis /app
 
+ENV NODE_ENV=production
 USER metaanalysis
 
-# Expose port (if needed for future HTTP interface)
+# Expose port (placeholder; MCP uses stdio)
 EXPOSE 3000
 
-# Start the MCP server
 CMD ["node", "build/index.js"]
