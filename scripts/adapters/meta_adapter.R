@@ -15,6 +15,11 @@ suppressMessages({
 # Core meta-analysis function using meta package
 perform_meta_analysis_core <- function(data, method = "random", measure = "OR") {
   
+  # Normalize common column names
+  if ("study" %in% colnames(data) && !"study_id" %in% colnames(data)) {
+    data$study_id <- data$study
+  }
+  
   # Perform meta-analysis using meta package
   if (measure == "OR" && all(c("events_treatment", "n_treatment", "events_control", "n_control") %in% colnames(data))) {
     # Binary outcome meta-analysis
@@ -30,17 +35,66 @@ perform_meta_analysis_core <- function(data, method = "random", measure = "OR") 
       random = (method == "random"),
       fixed = (method == "fixed")
     )
-  } else if (measure %in% c("MD", "SMD") && all(c("mean_treatment", "sd_treatment", "n_treatment", "mean_control", "sd_control", "n_control") %in% colnames(data))) {
-    # Continuous outcome meta-analysis
+  } else if (measure %in% c("MD", "SMD") && (
+             all(c("mean_treatment", "sd_treatment", "n_treatment", "mean_control", "sd_control", "n_control") %in% colnames(data)) ||
+             all(c("n.e", "mean.e", "sd.e", "n.c", "mean.c", "sd.c") %in% colnames(data))
+           )) {
+    # Continuous outcome meta-analysis (supports both treatment/control and e/c schemas)
+    if (all(c("n.e", "mean.e", "sd.e", "n.c", "mean.c", "sd.c") %in% colnames(data))) {
+      n_e <- data$n.e; mean_e <- data$mean.e; sd_e <- data$sd.e
+      n_c <- data$n.c; mean_c <- data$mean.c; sd_c <- data$sd.c
+    } else {
+      n_e <- data$n_treatment; mean_e <- data$mean_treatment; sd_e <- data$sd_treatment
+      n_c <- data$n_control; mean_c <- data$mean_control; sd_c <- data$sd_control
+    }
     meta_result <- metacont(
-      n.e = data$n_treatment,
-      mean.e = data$mean_treatment,
-      sd.e = data$sd_treatment,
-      n.c = data$n_control,
-      mean.c = data$mean_control,
-      sd.c = data$sd_control,
+      n.e = n_e,
+      mean.e = mean_e,
+      sd.e = sd_e,
+      n.c = n_c,
+      mean.c = mean_c,
+      sd.c = sd_c,
       studlab = data$study_id,
       sm = measure,
+      random = (method == "random"),
+      fixed = (method == "fixed")
+    )
+  } else if (measure == "PROP" && (all(c("events", "n") %in% colnames(data)) || all(c("event", "n") %in% colnames(data)))) {
+    # Single-arm proportion meta-analysis
+    # Canonicalize column names
+    if ("event" %in% colnames(data) && !"events" %in% colnames(data)) {
+      data$events <- data$event
+    }
+    # Determine transformation automatically per guidance
+    pvec <- if (all(c("events","n") %in% colnames(data))) data$events / pmax(data$n, 1) else {
+      if ("yi" %in% colnames(data)) data$yi else rep(NA_real_, nrow(data))
+    }
+    pvec <- suppressWarnings(as.numeric(pvec))
+    pvec <- pvec[is.finite(pvec)]
+    prop_sm <- "PRAW"
+    if (length(pvec) > 0) {
+      has_extremes <- any(pvec <= 0 | pvec >= 1)
+      mean_p <- mean(pvec, na.rm = TRUE)
+      if (has_extremes) prop_sm <- "PFT" else if (mean_p < 0.2 || mean_p > 0.8) prop_sm <- "PLOGIT" else prop_sm <- "PRAW"
+    }
+    # Prefer GLMM for single-arm meta-analysis per recommendations
+    meta_result <- metaprop(
+      event = data$events,
+      n = data$n,
+      studlab = if("study_id" %in% colnames(data)) data$study_id else NULL,
+      method = "GLMM",
+      sm = prop_sm,
+      random = (method == "random"),
+      fixed = (method == "fixed")
+    )
+  } else if (measure == "MEAN" && all(c("n", "mean", "sd") %in% colnames(data))) {
+    # Single-arm continuous meta-analysis (metamean)
+    meta_result <- metamean(
+      n = data$n,
+      mean = data$mean,
+      sd = data$sd,
+      studlab = if("study_id" %in% colnames(data)) data$study_id else NULL,
+      sm = "MRAW",
       random = (method == "random"),
       fixed = (method == "fixed")
     )
@@ -66,8 +120,9 @@ convert_metafor_to_meta_format <- function(data, session_config) {
   # If data already has the right columns, return as is
   required_binary <- c("events_treatment", "n_treatment", "events_control", "n_control")
   required_continuous <- c("mean_treatment", "sd_treatment", "n_treatment", "mean_control", "sd_control", "n_control")
+  required_prop <- c("events", "n")
   
-  if (all(required_binary %in% colnames(data)) || all(required_continuous %in% colnames(data))) {
+  if (all(required_binary %in% colnames(data)) || all(required_continuous %in% colnames(data)) || all(required_prop %in% colnames(data))) {
     return(data)
   }
   
@@ -77,7 +132,7 @@ convert_metafor_to_meta_format <- function(data, session_config) {
     # In a real implementation, we'd need to store the original data format
     converted <- data.frame(
       study_id = if("study" %in% colnames(data)) data$study else paste("Study", seq_len(nrow(data))),
-      effect_size = exp(data$yi),  # Assuming log scale
+      effect_size = if(!is.null(session_config$effectMeasure) && session_config$effectMeasure == "OR") exp(data$yi) else data$yi,
       se = sqrt(data$vi)
     )
     return(converted)

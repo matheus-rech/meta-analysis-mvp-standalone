@@ -179,6 +179,7 @@ validate_data_structure <- function(data, effect_measure) {
     "SMD" = c("study", "mean1", "sd1", "n1", "mean2", "sd2", "n2"),
     "HR" = c("study", "hr", "se_hr"),
     "PROP" = c("study", "events", "n"),
+    "MEAN" = c("study", "n", "mean", "sd"),
     stop("Unsupported effect measure: ", effect_measure)
   )
   
@@ -239,6 +240,10 @@ process_study_data <- function(data, session_config) {
       if (!"events" %in% names(data) && "event" %in% names(data)) data$events <- data$event
       data$yi <- data$events / data$n
       data$vi <- (data$yi * (1 - data$yi)) / pmax(data$n, 1)
+      data
+    },
+    "MEAN" = {
+      # Single-arm continuous: keep as-is; adapter will use metamean
       data
     },
     stop("Unsupported effect measure: ", effect_measure)
