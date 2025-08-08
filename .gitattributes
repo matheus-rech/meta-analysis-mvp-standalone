@@ -6,3 +6,4 @@
 
 # Limit CSV LFS to test data only (sample datasets may be large)
 test-data/*.csv filter=lfs diff=lfs merge=lfs -text
+*.xlsx filter=lfs diff=lfs merge=lfs -text
