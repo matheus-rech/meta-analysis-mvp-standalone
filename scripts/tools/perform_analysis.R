@@ -16,7 +16,7 @@ if (is.null(script_dir)) {
   }
 }
 
-source(file.path(script_dir, "meta_adapter.R"))
+source(file.path(script_dir, "../adapters", "meta_adapter.R"))
 
 perform_meta_analysis <- function(args) {
   session_path <- args$session_path

@@ -54,8 +54,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             effect_measure: {
               type: "string",
-              enum: ["OR", "RR", "MD", "SMD", "HR"],
-            },
+              enum: ["OR", "RR", "MD", "SMD", "HR", "PROP", "MEAN"],
+            }
             analysis_model: {
               type: "string",
               enum: ["fixed", "random", "auto"],
@@ -175,7 +175,7 @@ const toolValidationSchemas: Record<string, (args: any) => void> = {
     if (!['clinical_trial', 'observational', 'diagnostic'].includes(args.study_type)) {
       throw new ValidationError("Invalid study_type");
     }
-    if (!['OR', 'RR', 'MD', 'SMD', 'HR'].includes(args.effect_measure)) {
+    if (!['OR', 'RR', 'MD', 'SMD', 'HR', 'PROP'].includes(args.effect_measure)) {
       throw new ValidationError("Invalid effect_measure");
     }
     if (!['fixed', 'random', 'auto'].includes(args.analysis_model)) {
@@ -274,6 +274,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     
     switch (name) {
       case "health_check": {
+        // Probe R availability with a tiny script
+        let rAvailable = false;
+        try {
+          const probe = await executeRScript(["get_session_status", JSON.stringify({ session_id: "00000000-0000-4000-8000-000000000000" }), sessionManager.getSessionPath("00000000-0000-4000-8000-000000000000")], 2000);
+          // If it ran without throwing, R is available (we do not require valid session for probe)
+          rAvailable = true;
+        } catch {
+          // Fallback: try a no-op R call that should fail gracefully
+          try {
+            await executeRScript(["health_check", JSON.stringify({}), process.cwd()], 2000);
+            rAvailable = true;
+          } catch {
+            rAvailable = false;
+          }
+        }
+
         return {
           content: [{
             type: "text",
@@ -281,7 +297,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               status: 'success',
               message: 'Meta-analysis MVP server is healthy',
               version: '1.0.0',
-              r_available: true
+              r_available: rAvailable
             }, null, 2)
           }]
         };

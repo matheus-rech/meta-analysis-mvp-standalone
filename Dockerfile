@@ -1,91 +1,62 @@
-# Multi-stage build for Meta-Analysis MVP with optimizations
-FROM node:18-alpine AS builder
+# Multi-stage build for Meta-Analysis MVP (fast, cached)
+# 1) Build TypeScript with Node
+FROM node:18-bullseye AS builder
 
-# Install build dependencies
-RUN apk add --no-cache python3 make g++
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files first for better layer caching
-COPY package*.json ./
-COPY tsconfig.json ./
+# Install Node dependencies
+COPY package*.json tsconfig.json ./
+RUN npm ci
 
-# Install ALL dependencies (including dev) for building
-RUN npm ci && \
-    npm cache clean --force
-
-# Copy source code
+# Copy source and build
 COPY src ./src
-
-# Build TypeScript with production optimizations
 RUN npm run build
 
-# Production image with R-base
-FROM r-base:4.3.2
+# 2) Final image with R (binary packages) + Node
+FROM rocker/r2u:4.3.2
 
-# Install system dependencies in a single layer
+# Install Node.js 18 via NodeSource (ensures >=18)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install R packages via apt (binary, fast) and pandoc for R Markdown
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    curl \
-    ca-certificates \
-    pandoc \
-    libcurl4-openssl-dev \
-    libssl-dev \
-    libxml2-dev \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+      r-cran-meta \
+      r-cran-metafor \
+      r-cran-jsonlite \
+      r-cran-ggplot2 \
+      r-cran-rmarkdown \
+      r-cran-knitr \
+      r-cran-readxl \
+      r-cran-base64enc \
+      r-cran-dt \
+      pandoc && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install R packages with parallel installation and specific CRAN mirror
-RUN R -e "options(repos = c(CRAN = 'https://cloud.r-project.org/')); \
-    install.packages(c('meta', 'metafor', 'jsonlite', 'ggplot2', 'rmarkdown', 'knitr'), \
-    Ncpus = parallel::detectCores(), \
-    clean = TRUE)"
-
-# Create app directory and set permissions
 WORKDIR /app
 
-# Create non-root user early
-RUN useradd -m -s /bin/bash metaanalysis && \
-    mkdir -p /app/sessions /app/scripts /app/templates && \
+# Copy build artifacts and runtime deps
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/node_modules ./node_modules
+COPY package*.json ./
+
+# Copy R scripts and templates
+COPY scripts ./scripts
+COPY templates ./templates
+
+# Prepare sessions directory
+RUN mkdir -p sessions && \
+    useradd -m -s /bin/bash metaanalysis && \
     chown -R metaanalysis:metaanalysis /app
 
-# Copy built files from builder with specific ownership
-COPY --from=builder --chown=metaanalysis:metaanalysis /app/build ./build
-COPY --from=builder --chown=metaanalysis:metaanalysis /app/node_modules ./node_modules
-COPY --chown=metaanalysis:metaanalysis package*.json ./
-
-# Copy scripts and templates
-COPY --chown=metaanalysis:metaanalysis scripts ./scripts
-COPY --chown=metaanalysis:metaanalysis templates ./templates
-
-# Add health check script
-RUN echo '#!/bin/bash\nnode -e "process.exit(0)" && Rscript -e "cat(\"R is healthy\\n\")"' > /app/healthcheck.sh && \
-    chmod +x /app/healthcheck.sh && \
-    chown metaanalysis:metaanalysis /app/healthcheck.sh
-
-# Set environment variables
-ENV NODE_ENV=production \
-    SESSIONS_DIR=/app/sessions \
-    SCRIPTS_DIR=/app/scripts \
-    NODE_OPTIONS="--max-old-space-size=2048"
-
-# Switch to non-root user
+ENV NODE_ENV=production
 USER metaanalysis
 
-# Health check - verify both Node.js and R are functional
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD /app/healthcheck.sh || exit 1
-
-# Expose port for future HTTP interface
+# Expose port (placeholder; MCP uses stdio)
 EXPOSE 3000
 
-# Add labels for image metadata
-LABEL maintainer="Meta-Analysis MVP Team" \
-      version="1.0.0" \
-      description="Meta-Analysis MCP Server with R integration"
-
-# Start the MCP server
 CMD ["node", "build/index.js"]

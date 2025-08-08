@@ -1,11 +1,5 @@
 # Meta-Analysis MVP
 
-![CI/CD Pipeline](https://github.com/matheus-rech/meta-analysis-mvp/actions/workflows/ci.yml/badge.svg)
-![Docker Build](https://github.com/matheus-rech/meta-analysis-mvp/actions/workflows/docker-build.yml/badge.svg)
-![Docker Pulls](https://img.shields.io/docker/pulls/matheus-rech/meta-analysis-mvp)
-![Docker Image Size](https://img.shields.io/docker/image-size/matheus-rech/meta-analysis-mvp)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-
 A minimal, functional MVP for running meta-analysis through the Model Context Protocol (MCP). This simplified version removes all enterprise complexity while preserving the core functionality for conducting complete meta-analyses.
 
 ## Features
@@ -20,12 +14,9 @@ A minimal, functional MVP for running meta-analysis through the Model Context Pr
 
 - Node.js 18+ 
 - R 4.0+ with the following packages:
-  - `meta`
-  - `metafor`
-  - `jsonlite`
-  - `ggplot2` (for plots)
-  - `rmarkdown` (for reports)
-  - `knitr` (for reports)
+  - `meta`, `metafor`, `jsonlite`
+  - `ggplot2` (for plots), `rmarkdown`, `knitr` (for reports)
+  - `readxl` (Excel import), `base64enc` (binary uploads), `DT` (report tables)
 
 ## Quick Start
 
@@ -36,7 +27,7 @@ A minimal, functional MVP for running meta-analysis through the Model Context Pr
 npm install
 
 # Install R packages (run in R console)
-install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr"))
+install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr", "readxl", "base64enc", "DT"))
 ```
 
 ### 2. Build the TypeScript Server
@@ -267,7 +258,7 @@ Rscript --version
 ### Missing R Packages
 Install required packages in R:
 ```R
-install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr"))
+install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr", "readxl", "base64enc", "DT"))
 ```
 
 ### Permission Issues
@@ -278,4 +269,4 @@ chmod -R 755 sessions/
 
 ## License
 
-MIT License - See LICENSE file for details.# lobby
+MIT License - See LICENSE file for details.

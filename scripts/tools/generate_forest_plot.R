@@ -16,7 +16,7 @@ if (is.null(script_dir)) {
   }
 }
 
-source(file.path(script_dir, "meta_adapter.R"))
+source(file.path(script_dir, "../adapters", "meta_adapter.R"))
 
 generate_forest_plot <- function(args) {
   session_path <- args$session_path

@@ -33,8 +33,8 @@ RUN npm install -g \
     nodemon@3.1.9 \
     && npm cache clean --force
 
-# Create non-root user (use UID 1001 to avoid conflicts)
-RUN useradd -m -s /bin/bash -u 1001 ubuntu
+# Create non-root user
+RUN useradd -m -s /bin/bash -u 1000 ubuntu
 
 # Set working directory
 WORKDIR /home/ubuntu
