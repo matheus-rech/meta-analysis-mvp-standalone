@@ -64,7 +64,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE_NAME }}
-                    tags: |
+          tags: |
             type=ref,event=branch                # Tag with branch name (e.g., meta, production-grade-features)
             type=raw,value=latest                # Always tag as 'latest' regardless of branch
             type=ref,event=pr                    # Tag for PR events
