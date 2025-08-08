@@ -30,7 +30,7 @@ This file configures BugBot to automatically fix CI issues, address PR feedback,
 - Do NOT change git config, secrets, or branch protections
 - Do NOT commit large binaries; honor `.gitattributes` (png/pdf/docx/rds/xlsx via LFS)
 - Prefer minimal diffs; keep existing code style/structure
-- No long‑running commands (dev servers, watchers)
+- No long-running commands (dev servers, watchers)
 
 ## Commands (use these to reproduce/fix)
 ### Node / TypeScript
@@ -40,7 +40,7 @@ This file configures BugBot to automatically fix CI issues, address PR feedback,
 
 ### R scripts (non-interactive smoke)
 - `Rscript --version`
-- `Rscript scripts/entry/mcp_tools.R health_check "{}" .` (ignore error if unknown tool; existence proves R works)
+- `Rscript scripts/entry/mcp_tools.R health_check "{}" .` (45s default timeout; existence proves R works)
 - `Rscript tests/r/<file>.R` (when present)
 
 ### Docker (optional, if runner supports)
