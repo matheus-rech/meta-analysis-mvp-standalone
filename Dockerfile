@@ -13,7 +13,7 @@ COPY src ./src
 RUN npm run build
 
 # 2) Final image with R (binary packages) + Node
-FROM rocker/r2u:4.3.2
+FROM rocker/r2u:24.04
 
 # Install Node.js 18 via NodeSource (ensures >=18)
 RUN apt-get update && \
