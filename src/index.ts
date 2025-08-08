@@ -55,7 +55,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             effect_measure: {
               type: "string",
               enum: ["OR", "RR", "MD", "SMD", "HR", "PROP", "MEAN"],
-            }
+            },
             analysis_model: {
               type: "string",
               enum: ["fixed", "random", "auto"],
@@ -175,7 +175,7 @@ const toolValidationSchemas: Record<string, (args: any) => void> = {
     if (!['clinical_trial', 'observational', 'diagnostic'].includes(args.study_type)) {
       throw new ValidationError("Invalid study_type");
     }
-    if (!['OR', 'RR', 'MD', 'SMD', 'HR', 'PROP'].includes(args.effect_measure)) {
+    if (!['OR', 'RR', 'MD', 'SMD', 'HR', 'PROP', 'MEAN'].includes(args.effect_measure)) {
       throw new ValidationError("Invalid effect_measure");
     }
     if (!['fixed', 'random', 'auto'].includes(args.analysis_model)) {
