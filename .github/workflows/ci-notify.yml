@@ -30,7 +30,7 @@ jobs:
                           --arg branch "${{ steps.prep.outputs.BRANCH }}" \
                           --arg sha "${{ steps.prep.outputs.SHA }}" \
                           '{text: ("CI (Build and Push Docker Image) finished with status: " + $status + "\nBranch: " + $branch + "\nSHA: " + $sha + "\n" + $url)}')
-          curl -s -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL"
+          curl -s --fail -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" || { echo "Slack notification failed!"; exit 1; }
 
       - name: Fallback GitHub issue update
         env:
