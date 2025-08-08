@@ -1,16 +1,3 @@
-study,effect_size,variance,sample_size,year,country,quality_score
-Smith_2015,0.523,0.0412,125,2015,USA,8
-Johnson_2016,0.387,0.0523,98,2016,UK,7
-Chen_2017,0.612,0.0334,156,2017,China,9
-Garcia_2018,0.445,0.0489,110,2018,Spain,7
-Mueller_2019,0.298,0.0612,85,2019,Germany,6
-Tanaka_2020,0.567,0.0378,142,2020,Japan,8
-Brown_2020,0.481,0.0445,118,2020,Canada,8
-Lee_2021,0.356,0.0567,92,2021,South Korea,7
-Anderson_2021,0.592,0.0323,165,2021,Australia,9
-Dubois_2022,0.429,0.0501,105,2022,France,7
-Silva_2022,0.512,0.0423,122,2022,Brazil,8
-Kumar_2023,0.378,0.0534,96,2023,India,7
-Wilson_2023,0.546,0.0389,138,2023,USA,8
-Petrov_2023,0.463,0.0467,112,2023,Russia,7
-Martin_2024,0.501,0.0434,120,2024,UK,8
+version https://git-lfs.github.com/spec/v1
+oid sha256:10df2c37562674eb4e4b03a35f24ed4200b884ef9ca8f72f8fd0ea1a2e485e65
+size 692
