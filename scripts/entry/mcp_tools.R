@@ -23,14 +23,15 @@ get_script_dir <- function() {
 
 script_dir <- get_script_dir()
 
-# Source modular implementations
-source(file.path(script_dir, "upload_data.R"))
-source(file.path(script_dir, "perform_analysis.R"))
-source(file.path(script_dir, "generate_forest_plot.R"))
-source(file.path(script_dir, "assess_publication_bias.R"))
-source(file.path(script_dir, "generate_report.R"))
-source(file.path(script_dir, "get_session_status.R"))
-cochrane_path <- file.path(script_dir, "cochrane_guidance.R")
+# Source modular implementations (relative to scripts root)
+scripts_root <- normalizePath(file.path(script_dir, ".."), mustWork = FALSE)
+source(file.path(scripts_root, "tools", "upload_data.R"))
+source(file.path(scripts_root, "tools", "perform_analysis.R"))
+source(file.path(scripts_root, "tools", "generate_forest_plot.R"))
+source(file.path(scripts_root, "tools", "assess_publication_bias.R"))
+source(file.path(scripts_root, "tools", "generate_report.R"))
+source(file.path(scripts_root, "tools", "get_session_status.R"))
+cochrane_path <- file.path(scripts_root, "adapters", "cochrane_guidance.R")
 if (file.exists(cochrane_path)) {
   source(cochrane_path)
 }

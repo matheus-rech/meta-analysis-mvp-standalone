@@ -48,7 +48,7 @@ generate_report <- function(args) {
   }
   
   # Look for template
-  template_path <- file.path(dirname(script_dir), "templates", "report_template.Rmd")
+  template_path <- file.path(dirname(script_dir), "..", "templates", "report_template.Rmd")
   
   # Use journal-specific template if requested
   if (!is.null(args$journal_template)) {
