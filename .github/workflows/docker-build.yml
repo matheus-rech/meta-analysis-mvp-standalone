@@ -3,14 +3,14 @@ name: Build and Push Docker Image
 on:
   push:
     branches:
-      - meta
-      - production-grade-features
+
+      - publication-grade-features
     tags:
       - 'v*'
   pull_request:
     branches:
-      - meta
-      - production-grade-features
+
+      - publication-grade-features
   workflow_dispatch:
     inputs:
       push_to_registry:
@@ -65,7 +65,7 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch                # Tag with branch name (e.g., meta, production-grade-features)
+            type=ref,event=branch                # Tag with branch name (e.g., meta, publication-grade-features)
             type=raw,value=latest                # Always tag as 'latest' regardless of branch
             type=ref,event=pr                    # Tag for PR events
             type=semver,pattern={{version}}
