@@ -69,7 +69,7 @@ jobs:
           git push -u origin "$BR"
           gh pr create --title "CI Agent: Fix missing test container cleanup" \
                        --body "Auto-applied fix for 'No such container: test-container' by making docker logs tolerant and adding cleanup step." \
-                       --base meta --head "$BR"
+                       --base "${{ github.event.workflow_run.head_branch }}" --head "$BR"
 
       - name: No changes necessary
         if: env.FIX_MISSING_CONTAINER == '1' && env.CHANGED != '1'
