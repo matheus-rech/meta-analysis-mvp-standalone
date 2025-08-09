@@ -1,0 +1,18 @@
+name: MCP Smoke Test
+on:
+  push:
+    branches: [publication-grade-features]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: npm ci
+      - run: npm run build
+      - name: Run MCP inspector (handshake)
+        run: npx --yes @modelcontextprotocol/inspector@latest --ci node build/index.js
