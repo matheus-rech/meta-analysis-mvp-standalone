@@ -12,13 +12,8 @@ RUN npm ci
 COPY src ./src
 RUN npm run build
 
-# Prune dev dependencies to keep only production deps
-RUN npm prune --omit=dev
-
 # 2) Final image with R (binary packages) + Node
-
 # Use Ubuntu 24.04 r2u image (binary R packages)
-
 FROM rocker/r2u:24.04
 
 # Install Node.js 18 via NodeSource (ensures >=18)
@@ -64,5 +59,11 @@ USER metaanalysis
 
 # Expose port (placeholder; MCP uses stdio)
 EXPOSE 3000
+
+# Container healthcheck script
+COPY healthcheck.sh /app/healthcheck.sh
+RUN chmod +x /app/healthcheck.sh
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD ["/app/healthcheck.sh"]
 
 CMD ["node", "build/index.js"]
