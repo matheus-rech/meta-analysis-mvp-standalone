@@ -61,8 +61,7 @@ USER metaanalysis
 EXPOSE 3000
 
 # Container healthcheck script
-COPY healthcheck.sh /app/healthcheck.sh
-RUN chmod +x /app/healthcheck.sh
+COPY --chmod=755 healthcheck.sh /app/healthcheck.sh
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD ["/app/healthcheck.sh"]
 
