@@ -38,7 +38,10 @@ class MCPClient {
     });
 
     this.server.stderr.on('data', (data) => {
-      console.error('Server error:', data.toString());
+      // The MCP server writes normal logs to stderr by design to keep stdout JSON-only
+      // Treat these as server logs (not errors) in this demo client
+      const msg = data.toString();
+      process.stdout.write(`[server] ${msg}`);
     });
 
     // Wait for server to be ready

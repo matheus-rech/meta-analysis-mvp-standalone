@@ -1,117 +1,76 @@
-/**
- * Enhanced error classes with better context preservation
- */
-
-export class AppError extends Error {
-  public timestamp: string;
-  public context?: Record<string, any>;
-  
-  constructor(
-    message: string,
-    public code: string = 'UNKNOWN_ERROR',
-    public statusCode: number = 500,
-    context?: Record<string, any>
-  ) {
+export class ValidationError extends Error {
+  constructor(message: string) {
     super(message);
-    this.name = 'AppError';
-    this.timestamp = new Date().toISOString();
-    this.context = context;
-    
-    // Ensure proper stack trace in V8
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
-    }
-  }
-  
-  toJSON() {
-    return {
-      name: this.name,
-      message: this.message,
-      code: this.code,
-      statusCode: this.statusCode,
-      timestamp: this.timestamp,
-      context: this.context,
-      stack: this.stack
-    };
-  }
-}
-
-export class ValidationError extends AppError {
-  constructor(message: string, context?: Record<string, any>) {
-    super(message, 'VALIDATION_ERROR', 400, context);
     this.name = 'ValidationError';
   }
 }
 
-export class RScriptError extends AppError {
-  constructor(message: string, context?: Record<string, any>) {
-    super(message, 'R_SCRIPT_ERROR', 500, context);
-    this.name = 'RScriptError';
-  }
-}
-
-export class SessionError extends AppError {
-  constructor(message: string, context?: Record<string, any>) {
-    super(message, 'SESSION_ERROR', 404, context);
+export class SessionError extends Error {
+  constructor(message: string) {
+    super(message);
     this.name = 'SessionError';
   }
 }
 
 /**
- * Enhanced error handler with context preservation
+ * Represents an error that occurred during R code execution.
+ * 
+ * @property {number | undefined} code - Optional error code returned by the R process.
+ *   This code is typically set when the R process returns a specific error code.
+ *   Possible values depend on the R execution context, and may be undefined if no code is provided.
  */
-export function handleError(error: any): {
-  status: string;
-  message: string;
-  code?: string;
-  timestamp?: string;
-  context?: Record<string, any>;
-  stack?: string;
-} {
-  // Log full error details including stack trace
-  console.error('Error details:', {
-    message: error.message,
-    code: error.code,
-    stack: error.stack,
-    context: error.context,
-    timestamp: new Date().toISOString()
-  });
-  
-  if (error instanceof AppError) {
-    // In production, omit stack trace from response
-    const response: any = {
+export class RExecutionError extends Error {
+  constructor(message: string, public readonly code?: number) {
+    super(message);
+    this.name = 'RExecutionError';
+  }
+}
+
+export function handleError(error: unknown): { status: string; error: string; details?: any; stack?: string } {
+  console.error('Error occurred:', error);
+
+  const isDev = process.env.NODE_ENV === 'development';
+  let stack: string | undefined;
+
+  if (isDev && error instanceof Error) {
+    stack = error.stack;
+  }
+
+  if (error instanceof ValidationError) {
+    return {
       status: 'error',
-      message: error.message,
-      code: error.code,
-      timestamp: error.timestamp
+      error: error.message,
+      details: { type: 'validation' }
     };
-    
-    // Include context if available
-    if (error.context) {
-      response.context = error.context;
-    }
-    
-    // Include stack trace only in development
-    if (process.env.NODE_ENV === 'development') {
-      response.stack = error.stack;
-    }
-    
-    return response;
   }
   
-  // Handle unexpected errors
-  const timestamp = new Date().toISOString();
-  const response: any = {
+  if (error instanceof SessionError) {
+    return {
+      status: 'error',
+      error: error.message,
+      details: { type: 'session' }
+    };
+  }
+  
+  if (error instanceof RExecutionError) {
+    return {
+      status: 'error',
+      error: error.message,
+      details: { type: 'r_execution', code: error.code }
+    };
+  }
+  
+  if (error instanceof Error) {
+    return {
+      status: 'error',
+      error: error.message,
+      ...(stack ? { stack } : {}),
+      details: (error as any).details ? (error as any).details : undefined,
+    };
+  }
+  
+  return {
     status: 'error',
-    message: error.message || 'An unexpected error occurred',
-    code: 'INTERNAL_ERROR',
-    timestamp
+    error: 'An unknown error occurred'
   };
-  
-  // Include stack trace only in development
-  if (process.env.NODE_ENV === 'development' && error.stack) {
-    response.stack = error.stack;
-  }
-  
-  return response;
 }

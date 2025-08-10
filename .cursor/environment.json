@@ -1,33 +1,49 @@
 {
+  "name": "Meta-Analysis MVP Production Environment",
+  "description": "Production-grade environment for meta-analysis statistical computing platform",
   "dockerfile": ".cursor/Dockerfile",
-  "name": "meta-analysis-mvp",
-  "description": "Environment for meta-analysis MVP with R and Node.js support",
-  "backgroundAgent": true,
-  "tasks": [
-    {
-      "name": "meta-analysis-full",
-      "description": "Perform a complete meta-analysis on test-data/simulated-meta-analysis.csv including forest plot, funnel plot, and heterogeneity assessment",
-      "language": "R",
-      "script": "scripts/run_meta_analysis.R",
-      "args": [
-        "--input",
-        "test-data/simulated-meta-analysis.csv",
-        "--output-forest",
-        "output/forest_plot.png",
-        "--output-funnel",
-        "output/funnel_plot.png",
-        "--output-summary",
-        "output/meta_analysis_summary.json"
-      ],
-      "outputs": [
-        "output/forest_plot.png",
-        "output/funnel_plot.png",
-        "output/meta_analysis_summary.json"
-      ]
+  "branch": "production-grade-features",
+  "settings": {
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.profiles.linux": {
+      "bash": {
+        "path": "/bin/bash",
+        "icon": "terminal-bash"
+      }
     }
+  },
+  "forwardPorts": [3000, 8080],
+  "postCreateCommand": "npm install && npm run build",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next",
+        "REditorSupport.r",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "typescript.updateImportsOnFileMove.enabled": "always",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "eslint.enable": true,
+        "eslint.validate": [
+          "javascript",
+          "typescript"
+        ],
+        "r.rterm.linux": "/usr/bin/R",
+        "r.lsp.enabled": true
+      }
+    }
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder}/sessions,target=/home/ubuntu/sessions,type=bind,consistency=cached",
+    "source=${localWorkspaceFolder}/test-data,target=/home/ubuntu/test-data,type=bind,consistency=cached"
   ],
-  "build": {
-    "context": ".",
-    "dockerfile": "Dockerfile"
+  "remoteEnv": {
+    "NODE_ENV": "production",
+    "PORT": "3000",
+    "R_LIBS_USER": "/home/ubuntu/R/library"
   }
 }

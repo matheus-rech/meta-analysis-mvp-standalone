@@ -1,48 +1,43 @@
-import * as dotenv from 'dotenv';
+import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import * as fs from 'fs';
-
-// Load .env file
-dotenv.config();
+import { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
-// Function to resolve paths relative to project root
-function resolveProjectPath(relativePath: string): string {
-  const projectRoot = path.resolve(__dirname, '..');
-  return path.resolve(projectRoot, relativePath);
-}
-
-// Simple configuration
-const config = {
-  // Server settings
-  environment: process.env.NODE_ENV || 'development',
+class Config {
+  public readonly sessionsDir: string;
+  private readonly projectRoot: string;
   
-  // Paths
-  sessionsDir: resolveProjectPath(process.env.SESSIONS_DIR || 'sessions'),
-  scriptsDir: resolveProjectPath(process.env.SCRIPTS_DIR || 'scripts'),
+  constructor() {
+    this.projectRoot = path.resolve(__dirname, '..');
+    // Allow override via env var, fallback to projectRoot/sessions
+    const envDir = process.env.SESSIONS_DIR;
+    this.sessionsDir = envDir && envDir.trim().length > 0
+      ? path.resolve(envDir)
+      : path.join(this.projectRoot, 'sessions');
+  }
   
-  // R script path
-  rScriptPath: function(): string {
-    return path.join(this.scriptsDir, 'entry', 'mcp_tools.R');
-  },
-  
-  // Ensure necessary directories exist
-  ensureDirectories: async function(): Promise<void> {
-    const dirs = [this.sessionsDir];
-    for (const dir of dirs) {
-      await fs.promises.mkdir(dir, { recursive: true });
-    }
-  },
-  
-  // Validate configuration
-  validate: function(): void {
-    if (!fs.existsSync(this.rScriptPath())) {
-      throw new Error(`R script not found at: ${this.rScriptPath()}`);
+  async ensureDirectories(): Promise<void> {
+    if (!fs.existsSync(this.sessionsDir)) {
+      fs.mkdirSync(this.sessionsDir, { recursive: true });
     }
   }
-};
+  
+  validate(): void {
+    const requiredDirs = [this.sessionsDir];
+    for (const dir of requiredDirs) {
+      if (!fs.existsSync(dir)) {
+        throw new Error(`Required directory not found: ${dir}`);
+      }
+    }
+  }
+  
+  rScriptPath(): string {
+    return path.join(this.projectRoot, 'scripts', 'entry', 'mcp_tools.R');
+  }
+}
 
+const config = new Config();
 export default config;
