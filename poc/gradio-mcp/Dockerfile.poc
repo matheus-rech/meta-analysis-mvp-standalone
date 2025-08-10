@@ -28,6 +28,7 @@ RUN python3 -m venv /opt/venv && \
     pip install --upgrade pip && \
     pip install -r requirements-poc.txt
 ENV PATH="/opt/venv/bin:${PATH}"
+ENV RETICULATE_PYTHON="/opt/venv/bin/python"
 
 COPY poc/gradio-mcp/app.py ./app.py
 COPY poc/gradio-mcp/server.py ./server.py

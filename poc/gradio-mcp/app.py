@@ -7,12 +7,39 @@ from typing import Optional
 import gradio as gr
 from mcp import ClientSession, StdioTransport
 import base64
+import traceback
 
-# Optional: ensure R packages are importable via rpy2 if needed elsewhere
+# Initialize R and Python interop eagerly to ensure environment is ready
+R_READY = False
+PY_READY = False
+R_STATUS = ""
+PY_STATUS = ""
+
 try:
-    from rpy2 import robjects  # noqa: F401
-except Exception:
-    robjects = None
+    from rpy2 import robjects
+    robjects.r("library(jsonlite)")
+    robjects.r("library(meta)")
+    robjects.r("library(metafor)")
+    robjects.r("library(ggplot2)")
+    robjects.r("library(knitr)")
+    robjects.r("library(rmarkdown)")
+    robjects.r("library(readxl)")
+    robjects.r("library(base64enc)")
+    robjects.r("library(DT)")
+    robjects.r("library(reticulate)")
+    R_READY = True
+    R_STATUS = "R packages loaded"
+except Exception as e:
+    R_READY = False
+    R_STATUS = f"R init failed: {e}\n{traceback.format_exc()}"
+
+try:
+    import sys as _sys
+    PY_STATUS = f"Python OK: {_sys.version.split()[0]}"
+    PY_READY = True
+except Exception as e:
+    PY_READY = False
+    PY_STATUS = f"Python init failed: {e}\n{traceback.format_exc()}"
 
 SERVER_CMD = ["python", "poc/gradio-mcp/server.py"]
 
@@ -141,6 +168,10 @@ def ui_status(session_id: str) -> str:
 def build_ui() -> gr.Blocks:
     with gr.Blocks() as demo:
         gr.Markdown("## MCP Meta-Analysis PoC (Gradio)")
+
+        with gr.Row():
+            gr.Markdown(f"**R status:** {R_STATUS}")
+            gr.Markdown(f"**Python status:** {PY_STATUS}")
 
         with gr.Tab("Health"):
             detailed = gr.Checkbox(label="Detailed", value=False)
