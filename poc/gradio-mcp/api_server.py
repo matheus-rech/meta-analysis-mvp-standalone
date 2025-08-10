@@ -36,10 +36,18 @@ def initialize_meta_analysis(req: InitializeRequest):
 class UploadRequest(BaseModel):
     session_id: str
     data_format: str = Field(pattern=r"^(csv|excel|revman)$")
-    # Provide either data_content (base64) or csv_text for PoC convenience
+    # Provide either data_content (base64) or csv_text for PoC convenience, but not both
     data_content: str | None = None
     csv_text: str | None = None
     validation_level: str = Field(pattern=r"^(basic|comprehensive)$")
+
+    @root_validator
+    def check_mutually_exclusive(cls, values):
+        data_content = values.get("data_content")
+        csv_text = values.get("csv_text")
+        if (data_content is None and csv_text is None) or (data_content is not None and csv_text is not None):
+            raise ValueError("Provide either data_content or csv_text, but not both.")
+        return values
 
 
 @app.post("/api/upload_study_data")
