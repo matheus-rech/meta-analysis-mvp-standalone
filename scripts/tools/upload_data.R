@@ -111,17 +111,61 @@ upload_study_data <- function(args) {
     stop("Session configuration not found")
   }
   session_config <- fromJSON(session_config_path)
+  # Normalize field names from camelCase to snake_case for internal use
+  if (is.null(session_config$effect_measure) && !is.null(session_config$effectMeasure)) {
+    session_config$effect_measure <- session_config$effectMeasure
+  }
+  if (is.null(session_config$analysis_model) && !is.null(session_config$analysisModel)) {
+    session_config$analysis_model <- session_config$analysisModel
+  }
+  if (is.null(session_config$study_type) && !is.null(session_config$studyType)) {
+    session_config$study_type <- session_config$studyType
+  }
   
-  # Heuristic column normalization for single-arm proportions
-  if (!is.null(session_config$effect_measure) && toupper(session_config$effect_measure) == "PROP") {
-    names(loaded_data) <- tolower(names(loaded_data))
-    # Map study identifiers
-    if (!"study" %in% names(loaded_data)) {
-      if ("study_id" %in% names(loaded_data)) loaded_data$study <- loaded_data$study_id
-      else if ("id" %in% names(loaded_data)) loaded_data$study <- loaded_data$id
-      else if ("author" %in% names(loaded_data)) loaded_data$study <- loaded_data$author
+  # Canonicalize and map common column schemas to expected names
+  names(loaded_data) <- tolower(names(loaded_data))
+  # Map study identifiers if needed
+  if (!"study" %in% names(loaded_data)) {
+    if ("study_id" %in% names(loaded_data)) loaded_data$study <- loaded_data$study_id
+    else if ("studlab" %in% names(loaded_data)) loaded_data$study <- loaded_data$studlab
+    else if ("id" %in% names(loaded_data)) loaded_data$study <- loaded_data$id
+    else if ("author" %in% names(loaded_data)) loaded_data$study <- loaded_data$author
+  }
+  em <- toupper(session_config$effect_measure)
+  # Binary outcomes (OR/RR): map treatment/control schemas
+  if (em %in% c("OR","RR")) {
+    if (all(c("events_treatment","n_treatment","events_control","n_control") %in% names(loaded_data))) {
+      loaded_data$event1 <- loaded_data$events_treatment
+      loaded_data$n1    <- loaded_data$n_treatment
+      loaded_data$event2 <- loaded_data$events_control
+      loaded_data$n2    <- loaded_data$n_control
+    } else if (all(c("event.e","n.e","event.c","n.c") %in% names(loaded_data))) {
+      loaded_data$event1 <- loaded_data[["event.e"]]
+      loaded_data$n1     <- loaded_data[["n.e"]]
+      loaded_data$event2 <- loaded_data[["event.c"]]
+      loaded_data$n2     <- loaded_data[["n.c"]]
     }
-    # Map events
+  }
+  # Continuous outcomes (MD/SMD)
+  if (em %in% c("MD","SMD")) {
+    if (all(c("mean_treatment","sd_treatment","n_treatment","mean_control","sd_control","n_control") %in% names(loaded_data))) {
+      loaded_data$mean1 <- loaded_data$mean_treatment
+      loaded_data$sd1   <- loaded_data$sd_treatment
+      loaded_data$n1    <- loaded_data$n_treatment
+      loaded_data$mean2 <- loaded_data$mean_control
+      loaded_data$sd2   <- loaded_data$sd_control
+      loaded_data$n2    <- loaded_data$n_control
+    } else if (all(c("mean.e","sd.e","n.e","mean.c","sd.c","n.c") %in% names(loaded_data))) {
+      loaded_data$mean1 <- loaded_data[["mean.e"]]
+      loaded_data$sd1   <- loaded_data[["sd.e"]]
+      loaded_data$n1    <- loaded_data[["n.e"]]
+      loaded_data$mean2 <- loaded_data[["mean.c"]]
+      loaded_data$sd2   <- loaded_data[["sd.c"]]
+      loaded_data$n2    <- loaded_data[["n.c"]]
+    }
+  }
+  # Single-arm proportion: map events/n
+  if (em == "PROP") {
     if (!"events" %in% names(loaded_data)) {
       for (candidate in c("event", "positives", "cases", "successes", "x")) {
         if (candidate %in% names(loaded_data)) {
@@ -130,7 +174,6 @@ upload_study_data <- function(args) {
         }
       }
     }
-    # Map sample size n
     if (!"n" %in% names(loaded_data)) {
       for (candidate in c("total", "sample_size", "n_total", "nobs", "size", "n")) {
         if (candidate %in% names(loaded_data)) {
