@@ -1,10 +1,12 @@
-from fastapi import FastAPI, Body
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, conlist, confloat
 import gradio as gr
 
 from app import build_ui, call_tool, R_STATUS, PY_STATUS
 
-app = FastAPI(title="MCP Meta-Analysis PoC API")
+
+app = FastAPI(title="MCP Meta-Analysis PoC API (typed endpoints)")
 
 demo = build_ui()
 app = gr.mount_gradio_app(app, demo, path="/")
@@ -15,10 +17,115 @@ def health():
     return {"r_status": R_STATUS, "python_status": PY_STATUS}
 
 
-@app.post("/api/{tool}")
-def call_tool_endpoint(tool: str, payload: dict = Body(...)):
+class InitializeRequest(BaseModel):
+    name: str
+    study_type: str = Field(pattern=r"^(clinical_trial|observational|diagnostic)$")
+    effect_measure: str = Field(pattern=r"^(OR|RR|MD|SMD|HR|PROP|MEAN)$")
+    analysis_model: str = Field(pattern=r"^(fixed|random|auto)$")
+
+
+@app.post("/api/initialize_meta_analysis")
+def initialize_meta_analysis(req: InitializeRequest):
     try:
-        result = call_tool(tool, payload)
+        result = call_tool("initialize_meta_analysis", req.model_dump())
+        return JSONResponse(content={"status": "ok", "result": result})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+class UploadRequest(BaseModel):
+    session_id: str
+    data_format: str = Field(pattern=r"^(csv|excel|revman)$")
+    # Provide either data_content (base64) or csv_text for PoC convenience
+    data_content: str | None = None
+    csv_text: str | None = None
+    validation_level: str = Field(pattern=r"^(basic|comprehensive)$")
+
+
+@app.post("/api/upload_study_data")
+def upload_study_data(req: UploadRequest):
+    try:
+        payload = req.model_dump()
+        if not payload.get("data_content") and payload.get("csv_text"):
+            import base64 as _b64
+            payload["data_content"] = _b64.b64encode(payload["csv_text"].encode("utf-8")).decode("ascii")
+            payload.pop("csv_text", None)
+        result = call_tool("upload_study_data", payload)
+        return JSONResponse(content={"status": "ok", "result": result})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+class PerformRequest(BaseModel):
+    session_id: str
+    heterogeneity_test: bool = True
+    publication_bias: bool = True
+    sensitivity_analysis: bool = False
+
+
+@app.post("/api/perform_meta_analysis")
+def perform_meta_analysis(req: PerformRequest):
+    try:
+        result = call_tool("perform_meta_analysis", req.model_dump())
+        return JSONResponse(content={"status": "ok", "result": result})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+class ForestPlotRequest(BaseModel):
+    session_id: str
+    plot_style: str = Field(pattern=r"^(classic|modern|journal_specific)$")
+    confidence_level: confloat(gt=0, lt=1) = 0.95
+    custom_labels: dict | None = None
+
+
+@app.post("/api/generate_forest_plot")
+def generate_forest_plot(req: ForestPlotRequest):
+    try:
+        result = call_tool("generate_forest_plot", req.model_dump())
+        return JSONResponse(content={"status": "ok", "result": result})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+class PublicationBiasRequest(BaseModel):
+    session_id: str
+    methods: conlist(str, min_length=1)
+
+
+@app.post("/api/assess_publication_bias")
+def assess_publication_bias(req: PublicationBiasRequest):
+    try:
+        result = call_tool("assess_publication_bias", req.model_dump())
+        return JSONResponse(content={"status": "ok", "result": result})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+class GenerateReportRequest(BaseModel):
+    session_id: str
+    format: str = Field(pattern=r"^(html|pdf|word)$")
+    include_code: bool = False
+    journal_template: str | None = None
+
+
+@app.post("/api/generate_report")
+def generate_report(req: GenerateReportRequest):
+    try:
+        result = call_tool("generate_report", req.model_dump())
+        return JSONResponse(content={"status": "ok", "result": result})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+class SessionStatusRequest(BaseModel):
+    session_id: str
+
+
+@app.post("/api/get_session_status")
+def get_session_status(req: SessionStatusRequest):
+    try:
+        result = call_tool("get_session_status", req.model_dump())
         return JSONResponse(content={"status": "ok", "result": result})
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
