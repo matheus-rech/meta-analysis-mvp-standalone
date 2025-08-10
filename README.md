@@ -27,7 +27,7 @@ A minimal, functional MVP for running meta-analysis through the Model Context Pr
 npm install
 
 # Install R packages (run in R console)
-install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr", "readxl", "base64enc", "DT"))
+install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr", "readxl", "base64enc", "DT", "reticulate"))
 ```
 
 ### 2. Build the TypeScript Server
@@ -258,7 +258,7 @@ Rscript --version
 ### Missing R Packages
 Install required packages in R:
 ```R
-install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr", "readxl", "base64enc", "DT"))
+install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr", "readxl", "base64enc", "DT", "reticulate"))
 ```
 
 ### Permission Issues

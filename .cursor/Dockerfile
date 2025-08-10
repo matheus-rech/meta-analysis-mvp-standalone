@@ -4,7 +4,7 @@
 FROM rocker/r-ver:4.3.2 AS r-builder
 
 # Install R packages
-RUN R -e "install.packages(c('metafor', 'jsonlite', 'ggplot2', 'markdown', 'rmarkdown', 'knitr'), repos='https://cran.rstudio.com/', dependencies=TRUE)"
+RUN R -e "install.packages(c('metafor', 'jsonlite', 'ggplot2', 'markdown', 'rmarkdown', 'knitr', 'reticulate'), repos='https://cran.rstudio.com/', dependencies=TRUE)"
 
 # Main stage
 FROM ubuntu:22.04

@@ -34,6 +34,7 @@ RUN apt-get update && \
       r-cran-knitr \
       r-cran-readxl \
       r-cran-base64enc \
+      r-cran-reticulate \
       r-cran-dt \
       pandoc && \
     rm -rf /var/lib/apt/lists/*

@@ -33,7 +33,7 @@ This is a Meta-Analysis MVP (Minimum Viable Product) that implements a Model Con
 npm install
 
 # Install R packages (run in R console)
-install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr"))
+install.packages(c("meta", "metafor", "jsonlite", "ggplot2", "rmarkdown", "knitr", "reticulate"))
 
 # Build TypeScript
 npm run build
