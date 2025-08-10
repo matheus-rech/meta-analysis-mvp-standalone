@@ -126,9 +126,9 @@ def ui_analyze(session_id: str, heterogeneity_test: bool, publication_bias: bool
         "perform_meta_analysis",
         {
             "session_id": session_id,
-            "heterogeneity_test": bool(heterogeneity_test),
-            "publication_bias": bool(publication_bias),
-            "sensitivity_analysis": bool(sensitivity),
+            "heterogeneity_test": heterogeneity_test,
+            "publication_bias": publication_bias,
+            "sensitivity_analysis": sensitivity,
         },
     )
 
