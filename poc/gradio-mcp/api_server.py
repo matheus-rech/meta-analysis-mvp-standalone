@@ -213,7 +213,7 @@ try:
             {
                 "session_id": session_id,
                 "format": format,
-                "include_code": bool(include_code),
+                "include_code": include_code,
             },
         )
 
