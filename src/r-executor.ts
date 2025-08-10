@@ -1,5 +1,4 @@
 import { spawn, ChildProcess } from 'child_process';
-import * as path from 'path';
 import { RExecutionError } from './errors.js';
 import config from './config.js';
 
@@ -8,7 +7,7 @@ const activeProcesses = new Set<ChildProcess>();
 export async function executeRScript(
   args: string[],
   timeout: number = 30000
-): Promise<any> {
+): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const scriptPath = config.rScriptPath();
     
@@ -21,18 +20,16 @@ export async function executeRScript(
     
     let stdout = '';
     let stderr = '';
-    let timeoutHandle: NodeJS.Timeout;
-    
-    const cleanup = () => {
-      activeProcesses.delete(rProcess);
-      if (timeoutHandle) clearTimeout(timeoutHandle);
-    };
-    
-    timeoutHandle = setTimeout(() => {
+    const timeoutHandle = setTimeout(() => {
       rProcess.kill('SIGTERM');
       cleanup();
       reject(new RExecutionError('R script execution timed out'));
     }, timeout);
+    
+    function cleanup() {
+      activeProcesses.delete(rProcess);
+      clearTimeout(timeoutHandle);
+    }
     
     rProcess.stdout.on('data', (data) => {
       stdout += data.toString();
