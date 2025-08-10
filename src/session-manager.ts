@@ -93,8 +93,12 @@ class SessionManager {
     return path.join(this.sessionsDir, sessionId);
   }
   
-  getSession(sessionId: string): Session | undefined {
-    return this.sessions.get(sessionId);
+  getSession(sessionId: string): Session {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      throw new SessionError(`Session with ID ${sessionId} not found.`);
+    }
+    return session;
   }
   
   updateSessionStatus(sessionId: string, status: Session['status']): void {
