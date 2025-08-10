@@ -112,15 +112,7 @@ upload_study_data <- function(args) {
   }
   session_config <- fromJSON(session_config_path)
   # Normalize field names from camelCase to snake_case for internal use
-  if (is.null(session_config$effect_measure) && !is.null(session_config$effectMeasure)) {
-    session_config$effect_measure <- session_config$effectMeasure
-  }
-  if (is.null(session_config$analysis_model) && !is.null(session_config$analysisModel)) {
-    session_config$analysis_model <- session_config$analysisModel
-  }
-  if (is.null(session_config$study_type) && !is.null(session_config$studyType)) {
-    session_config$study_type <- session_config$studyType
-  }
+  session_config <- normalize_camel_to_snake(session_config)
   
   # Canonicalize and map common column schemas to expected names
   names(loaded_data) <- tolower(names(loaded_data))
