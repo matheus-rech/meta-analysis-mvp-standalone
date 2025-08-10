@@ -9,6 +9,16 @@ export async function executeRScript(
   args: string[],
   timeout: number = 30000
 ): Promise<any> {
+  // Basic argument validation: only strings, reasonable lengths
+  if (!Array.isArray(args) || args.some(a => typeof a !== 'string')) {
+    throw new RExecutionError('Invalid arguments: all args must be strings');
+  }
+  const MAX_ARG_LEN = 100000; // 100KB per arg
+  for (const a of args) {
+    if (a.length > MAX_ARG_LEN) {
+      throw new RExecutionError('Argument too large');
+    }
+  }
   return new Promise((resolve, reject) => {
     const scriptPath = config.rScriptPath();
     
@@ -54,11 +64,11 @@ export async function executeRScript(
       }
       
       try {
-        const result = JSON.parse(stdout.trim());
+        const trimmed = stdout.trim();
+        const result = JSON.parse(trimmed);
         resolve(result);
       } catch (parseError) {
-        // If not JSON, return raw output
-        resolve({ output: stdout.trim() });
+        reject(new RExecutionError('Failed to parse R output as JSON'));
       }
     });
     

@@ -113,6 +113,9 @@ upload_study_data <- function(args) {
   session_config <- fromJSON(session_config_path)
   # Normalize field names from camelCase to snake_case for internal use
   session_config <- normalize_camel_to_snake(session_config)
+  if (is.null(session_config$effect_measure) || !is.character(session_config$effect_measure)) {
+    stop("Session configuration missing or invalid 'effect_measure'")
+  }
   
   # Canonicalize and map common column schemas to expected names
   names(loaded_data) <- tolower(names(loaded_data))

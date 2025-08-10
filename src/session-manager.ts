@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import config from './config.js';
 import { v4 as uuidv4 } from 'uuid';
 import { SessionError } from './errors.js';
 
@@ -20,7 +21,7 @@ class SessionManager {
   private sessions: Map<string, Session>;
   
   constructor() {
-    this.sessionsDir = path.join(process.cwd(), 'sessions');
+    this.sessionsDir = config.sessionsDir;
     this.sessions = new Map();
     this.loadSessions();
   }
@@ -68,11 +69,15 @@ class SessionManager {
     // Save session to memory
     this.sessions.set(session.id, session);
     
-    // Create session directory
+    // Create session directory and expected subdirectories
     const sessionDir = this.getSessionPath(session.id);
     if (!fs.existsSync(sessionDir)) {
       fs.mkdirSync(sessionDir, { recursive: true });
     }
+    ['data', 'processing', 'results', 'input'].forEach((sub) => {
+      const subdir = path.join(sessionDir, sub);
+      if (!fs.existsSync(subdir)) fs.mkdirSync(subdir, { recursive: true });
+    });
     
     // Save session metadata
     const metadataPath = path.join(sessionDir, 'session.json');
