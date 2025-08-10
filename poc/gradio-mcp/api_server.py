@@ -147,7 +147,7 @@ try:
 
     @fmcp.tool("health_check")
     def fmcp_health_check(detailed: bool = False):
-        return call_tool("health_check", {"detailed": bool(detailed)})
+        return call_tool("health_check", {"detailed": detailed})
 
     @fmcp.tool("initialize_meta_analysis")
     def fmcp_initialize(name: str, study_type: str, effect_measure: str, analysis_model: str):
