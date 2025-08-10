@@ -37,8 +37,8 @@ class UploadRequest(BaseModel):
     session_id: str
     data_format: str = Field(pattern=r"^(csv|excel|revman)$")
     # Provide either data_content (base64) or csv_text for PoC convenience, but not both
-    data_content: str | None = None
-    csv_text: str | None = None
+    data_content: Optional[str] = None
+    csv_text: Optional[str] = None
     validation_level: str = Field(pattern=r"^(basic|comprehensive)$")
 
     @model_validator(mode='before')
