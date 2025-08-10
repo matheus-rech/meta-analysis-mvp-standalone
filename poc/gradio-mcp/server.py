@@ -35,7 +35,7 @@ def execute_r(tool: str, args: Dict[str, Any], session_path: str = None, timeout
         text=True,
     )
     try:
-        stdout, stderr = proc.communicate(timeout=timeout/1000)
+        stdout, stderr = proc.communicate(timeout=timeout_ms/1000)
     except subprocess.TimeoutExpired:
         proc.kill()
         raise RuntimeError('R script execution timed out')
