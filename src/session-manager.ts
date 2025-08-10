@@ -1,8 +1,7 @@
-import * as fs from 'fs/promises';
+import * as fs from 'fs';
 import * as path from 'path';
-import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
-import config from './config.js';
-import { SessionError, ValidationError } from './errors.js';
+import { v4 as uuidv4 } from 'uuid';
+import { SessionError } from './errors.js';
 
 interface Session {
   id: string;
@@ -10,144 +9,105 @@ interface Session {
   studyType: string;
   effectMeasure: string;
   analysisModel: string;
-  createdAt: string;
-  config?: any;
+  config: any;
+  createdAt: string; // ISO string for persistence
+  updatedAt: string; // ISO string for persistence
+  status: 'initialized' | 'data_uploaded' | 'analysis_complete' | 'error';
 }
 
-/**
- * Simple file-based session manager
- */
-export class SessionManager {
+class SessionManager {
   private sessionsDir: string;
-
+  private sessions: Map<string, Session>;
+  
   constructor() {
-    this.sessionsDir = config.sessionsDir;
+    this.sessionsDir = path.join(process.cwd(), 'sessions');
+    this.sessions = new Map();
+    this.loadSessions();
   }
-
-  /**
-   * Create a new session
-   */
-  async createSession(data: {
+  
+  private loadSessions(): void {
+    if (!fs.existsSync(this.sessionsDir)) {
+      fs.mkdirSync(this.sessionsDir, { recursive: true });
+    }
+    
+    // Load existing sessions from disk if needed
+    const sessionFiles = fs.readdirSync(this.sessionsDir)
+      .filter(file => file.endsWith('.json'));
+    
+    for (const file of sessionFiles) {
+      try {
+        const sessionPath = path.join(this.sessionsDir, file);
+        const sessionData = JSON.parse(fs.readFileSync(sessionPath, 'utf-8'));
+        this.sessions.set(sessionData.id, sessionData);
+      } catch (error) {
+        console.error(`Failed to load session ${file}:`, error);
+      }
+    }
+  }
+  
+  async createSession(params: {
     name: string;
     studyType: string;
     effectMeasure: string;
     analysisModel: string;
-    config?: any;
+    config: any;
   }): Promise<Session> {
-    const sessionId = uuidv4();
+    const nowIso = new Date().toISOString();
     const session: Session = {
-      id: sessionId,
-      name: data.name,
-      studyType: data.studyType,
-      effectMeasure: data.effectMeasure,
-      analysisModel: data.analysisModel,
-      createdAt: new Date().toISOString(),
-      config: data.config || {}
+      id: uuidv4(),
+      name: params.name,
+      studyType: params.studyType,
+      effectMeasure: params.effectMeasure,
+      analysisModel: params.analysisModel,
+      config: params.config,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      status: 'initialized'
     };
-
-    // Create session directory
-    const sessionPath = path.join(this.sessionsDir, sessionId);
-    await fs.mkdir(sessionPath, { recursive: true });
     
-    // Create subdirectories
-    await fs.mkdir(path.join(sessionPath, 'data'), { recursive: true });
-    await fs.mkdir(path.join(sessionPath, 'results'), { recursive: true });
-    await fs.mkdir(path.join(sessionPath, 'processing'), { recursive: true });
-
+    // Save session to memory
+    this.sessions.set(session.id, session);
+    
+    // Create session directory
+    const sessionDir = this.getSessionPath(session.id);
+    if (!fs.existsSync(sessionDir)) {
+      fs.mkdirSync(sessionDir, { recursive: true });
+    }
+    
     // Save session metadata
-    await fs.writeFile(
-      path.join(sessionPath, 'session.json'),
-      JSON.stringify(session, null, 2)
-    );
-
-    console.log(`Created session: ${sessionId}`);
+    const metadataPath = path.join(sessionDir, 'session.json');
+    fs.writeFileSync(metadataPath, JSON.stringify(session, null, 2));
+    
     return session;
   }
-
-  /**
-   * Get session by ID
-   */
-  async getSession(sessionId: string): Promise<Session> {
-    // Validate session ID is a valid UUID
-    if (!this.isValidSessionId(sessionId)) {
-      throw new ValidationError(`Invalid session ID format: ${sessionId}`);
-    }
-    
-    const sessionPath = path.join(this.sessionsDir, sessionId);
-    
-    try {
-      const sessionFile = path.join(sessionPath, 'session.json');
-      const data = await fs.readFile(sessionFile, 'utf-8');
-      return JSON.parse(data);
-    } catch {
-      throw new SessionError(`Session not found: ${sessionId}`);
-    }
+  
+  async sessionExists(sessionId: string): Promise<boolean> {
+    if (this.sessions.has(sessionId)) return true;
+    const sessionDir = this.getSessionPath(sessionId);
+    if (!fs.existsSync(sessionDir)) return false;
+    const metadataPath = path.join(sessionDir, 'session.json');
+    return fs.existsSync(metadataPath);
   }
-
-  /**
-   * Get session path
-   */
+  
   getSessionPath(sessionId: string): string {
-    // Validate session ID is a valid UUID to prevent path traversal
-    if (!this.isValidSessionId(sessionId)) {
-      throw new ValidationError(`Invalid session ID format: ${sessionId}`);
-    }
-    
     return path.join(this.sessionsDir, sessionId);
   }
-
-  /**
-   * Check if session exists
-   */
-  async sessionExists(sessionId: string): Promise<boolean> {
-    // Validate session ID is a valid UUID
-    if (!this.isValidSessionId(sessionId)) {
-      return false;
-    }
-    
-    try {
-      await fs.access(path.join(this.sessionsDir, sessionId));
-      return true;
-    } catch {
-      return false;
-    }
+  
+  getSession(sessionId: string): Session | undefined {
+    return this.sessions.get(sessionId);
   }
-
-  /**
-   * List all sessions
-   */
-  async listSessions(): Promise<Session[]> {
-    try {
-      const dirs = await fs.readdir(this.sessionsDir);
-      const sessions: Session[] = [];
-
-      for (const dir of dirs) {
-        // Only process valid UUID directories
-        if (this.isValidSessionId(dir)) {
-          try {
-            const session = await this.getSession(dir);
-            sessions.push(session);
-          } catch {
-            // Skip invalid session directories
-          }
-        }
-      }
-
-      return sessions.sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-    } catch {
-      return [];
+  
+  updateSessionStatus(sessionId: string, status: Session['status']): void {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.status = status;
+      session.updatedAt = new Date().toISOString();
+      
+      // Save updated session
+      const metadataPath = path.join(this.getSessionPath(sessionId), 'session.json');
+      fs.writeFileSync(metadataPath, JSON.stringify(session, null, 2));
     }
-  }
-
-  /**
-   * Validate session ID is a valid UUID v4
-   */
-  private isValidSessionId(sessionId: string): boolean {
-    return typeof sessionId === 'string' && uuidValidate(sessionId) && sessionId.length === 36;
   }
 }
 
-// Export singleton instance
 export const sessionManager = new SessionManager();

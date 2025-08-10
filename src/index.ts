@@ -259,10 +259,11 @@ const toolValidationSchemas: Record<string, (args: any) => void> = {
 };
 
 // Handle tool calls
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
   try {
     const { name, arguments: args } = request.params;
-    console.log(`Processing tool request: ${name}`);
+    // Route debug logs to stderr to avoid contaminating stdout JSON-RPC
+    console.error(`Processing tool request: ${name}`);
     
     // Validate tool exists
     if (!toolValidationSchemas[name]) {
@@ -366,15 +367,16 @@ async function main() {
     await config.ensureDirectories();
     config.validate();
     
-    console.log(`Starting meta-analysis MVP server v1.0.0`);
-    console.log(`R script path: ${config.rScriptPath()}`);
-    console.log(`Sessions directory: ${config.sessionsDir}`);
+    // Route informational logs to stderr so stdout remains JSON-RPC only
+    console.error(`Starting meta-analysis MVP server v1.0.0`);
+    console.error(`R script path: ${config.rScriptPath()}`);
+    console.error(`Sessions directory: ${config.sessionsDir}`);
     
     // Connect to transport
     const transport = new StdioServerTransport();
     await server.connect(transport);
     
-    console.log('Server ready to process requests');
+    console.error('Server ready to process requests');
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
@@ -386,12 +388,12 @@ let isShuttingDown = false;
 
 async function shutdown(signal: string) {
   if (isShuttingDown) {
-    console.log('Shutdown already in progress...');
+    console.error('Shutdown already in progress...');
     return;
   }
   
   isShuttingDown = true;
-  console.log(`\nReceived ${signal}, shutting down gracefully...`);
+  console.error(`\nReceived ${signal}, shutting down gracefully...`);
   
   try {
     // Clean up R processes
@@ -400,7 +402,7 @@ async function shutdown(signal: string) {
     // Wait a bit for processes to clean up
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    console.log('Cleanup completed');
+    console.error('Cleanup completed');
     process.exit(0);
   } catch (error) {
     console.error('Error during shutdown:', error);
@@ -413,12 +415,12 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 // Handle uncaught errors
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', (error: Error) => {
   console.error('Uncaught exception:', error);
   shutdown('uncaughtException');
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
   console.error('Unhandled rejection at:', promise, 'reason:', reason);
   shutdown('unhandledRejection');
 });

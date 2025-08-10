@@ -60,4 +60,10 @@ USER metaanalysis
 # Expose port (placeholder; MCP uses stdio)
 EXPOSE 3000
 
+# Container healthcheck script
+COPY healthcheck.sh /app/healthcheck.sh
+RUN chmod +x /app/healthcheck.sh
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD ["/app/healthcheck.sh"]
+
 CMD ["node", "build/index.js"]
