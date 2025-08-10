@@ -1,0 +1,205 @@
+import os
+import json
+import subprocess
+import threading
+from typing import Optional
+
+import gradio as gr
+from mcp import ClientSession, StdioTransport
+from rpy2 import robjects
+
+# Ensure rpy2 basics
+robjects.r("library(jsonlite)")
+robjects.r("library(meta)")
+robjects.r("library(metafor)")
+robjects.r("library(ggplot2)")
+robjects.r("library(knitr)")
+robjects.r("library(rmarkdown)")
+robjects.r("library(readxl)")
+robjects.r("library(base64enc)")
+robjects.r("library(DT)")
+robjects.r("library(reticulate)")
+
+SERVER_CMD = ["node", "build/index.js"]
+
+server_proc: Optional[subprocess.Popen] = None
+server_lock = threading.Lock()
+
+
+def start_server() -> None:
+    global server_proc
+    with server_lock:
+        if server_proc and server_proc.poll() is None:
+            return
+        server_proc = subprocess.Popen(
+            SERVER_CMD,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+
+
+def stop_server() -> None:
+    global server_proc
+    with server_lock:
+        if server_proc and server_proc.poll() is None:
+            server_proc.terminate()
+            try:
+                server_proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                server_proc.kill()
+        server_proc = None
+
+
+def call_tool(tool: str, args: dict) -> str:
+    start_server()
+    assert server_proc is not None
+    transport = StdioTransport(server_proc.stdin, server_proc.stdout)
+    with ClientSession(transport) as session:
+        tools = session.list_tools()
+        if not any(t.name == tool for t in tools):
+            return f"Tool {tool} not available"
+        result = session.call_tool(tool, args)
+    return json.dumps(result, indent=2)
+
+
+def ui_health_check(detailed: bool) -> str:
+    return call_tool("health_check", {"detailed": bool(detailed)})
+
+
+def ui_init(name: str, study_type: str, effect_measure: str, analysis_model: str) -> str:
+    return call_tool(
+        "initialize_meta_analysis",
+        {
+            "name": name,
+            "study_type": study_type,
+            "effect_measure": effect_measure,
+            "analysis_model": analysis_model,
+        },
+    )
+
+
+def ui_upload(session_id: str, data: str, data_format: str, validation_level: str) -> str:
+    # Accept CSV content directly in the textbox for PoC
+    encoded = robjects.r["base64_enc"](data).r_repr()
+    encoded = json.loads(encoded)
+    return call_tool(
+        "upload_study_data",
+        {
+            "session_id": session_id,
+            "data_format": data_format,
+            "data_content": encoded,
+            "validation_level": validation_level,
+        },
+    )
+
+
+def ui_analyze(session_id: str, heterogeneity_test: bool, publication_bias: bool, sensitivity: bool) -> str:
+    return call_tool(
+        "perform_meta_analysis",
+        {
+            "session_id": session_id,
+            "heterogeneity_test": bool(heterogeneity_test),
+            "publication_bias": bool(publication_bias),
+            "sensitivity_analysis": bool(sensitivity),
+        },
+    )
+
+
+def ui_forest(session_id: str, style: str, conf: float) -> str:
+    return call_tool(
+        "generate_forest_plot",
+        {
+            "session_id": session_id,
+            "plot_style": style,
+            "confidence_level": float(conf),
+        },
+    )
+
+
+def ui_bias(session_id: str, methods: str) -> str:
+    methods_list = [m.strip() for m in methods.split(",") if m.strip()]
+    return call_tool(
+        "assess_publication_bias",
+        {
+            "session_id": session_id,
+            "methods": methods_list,
+        },
+    )
+
+
+def ui_report(session_id: str, fmt: str, include_code: bool) -> str:
+    return call_tool(
+        "generate_report",
+        {
+            "session_id": session_id,
+            "format": fmt,
+            "include_code": bool(include_code),
+        },
+    )
+
+
+def ui_status(session_id: str) -> str:
+    return call_tool("get_session_status", {"session_id": session_id})
+
+
+def build_ui() -> gr.Blocks:
+    with gr.Blocks() as demo:
+        gr.Markdown("## MCP Meta-Analysis PoC (Gradio)")
+
+        with gr.Tab("Health"):
+            detailed = gr.Checkbox(label="Detailed", value=False)
+            out = gr.Code(label="Result")
+            gr.Button("Health check").click(ui_health_check, inputs=[detailed], outputs=[out])
+
+        with gr.Tab("Init"):
+            name = gr.Textbox(label="Name", value="Demo Meta Analysis")
+            study_type = gr.Dropdown(["clinical_trial","observational","diagnostic"], value="clinical_trial")
+            effect_measure = gr.Dropdown(["OR","RR","MD","SMD","HR","PROP","MEAN"], value="OR")
+            analysis_model = gr.Dropdown(["fixed","random","auto"], value="random")
+            out_init = gr.Code(label="Result")
+            gr.Button("Initialize").click(ui_init, [name, study_type, effect_measure, analysis_model], [out_init])
+
+        with gr.Tab("Upload"):
+            session_id = gr.Textbox(label="Session ID")
+            data_format = gr.Dropdown(["csv","excel","revman"], value="csv")
+            validation_level = gr.Dropdown(["basic","comprehensive"], value="basic")
+            data = gr.Textbox(label="CSV content", lines=8)
+            out_upload = gr.Code(label="Result")
+            gr.Button("Upload").click(ui_upload, [session_id, data, data_format, validation_level], [out_upload])
+
+        with gr.Tab("Analyze"):
+            heterogeneity = gr.Checkbox(label="Heterogeneity test", value=True)
+            pub_bias = gr.Checkbox(label="Publication bias", value=True)
+            sensitivity = gr.Checkbox(label="Sensitivity analysis", value=False)
+            out_analyze = gr.Code(label="Result")
+            gr.Button("Run Analysis").click(ui_analyze, [session_id, heterogeneity, pub_bias, sensitivity], [out_analyze])
+
+        with gr.Tab("Forest"):
+            style = gr.Dropdown(["classic","modern","journal_specific"], value="classic")
+            conf = gr.Slider(0.50, 0.99, value=0.95, step=0.01)
+            out_forest = gr.Code(label="Result")
+            gr.Button("Generate Forest").click(ui_forest, [session_id, style, conf], [out_forest])
+
+        with gr.Tab("Bias"):
+            methods = gr.Textbox(label="Methods (comma-separated)", value="funnel_plot, egger_test, begg_test, trim_fill")
+            out_bias = gr.Code(label="Result")
+            gr.Button("Assess Bias").click(ui_bias, [session_id, methods], [out_bias])
+
+        with gr.Tab("Report"):
+            fmt = gr.Dropdown(["html","pdf","word"], value="html")
+            include_code = gr.Checkbox(label="Include code", value=False)
+            out_report = gr.Code(label="Result")
+            gr.Button("Generate Report").click(ui_report, [session_id, fmt, include_code], [out_report])
+
+        with gr.Tab("Status"):
+            out_status = gr.Code(label="Result")
+            gr.Button("Get Status").click(ui_status, [session_id], [out_status])
+    return demo
+
+
+if __name__ == "__main__":
+    demo = build_ui()
+    demo.queue().launch(server_name="0.0.0.0", server_port=int(os.getenv("PORT", 7860)))
