@@ -144,6 +144,9 @@ upload_study_data <- function(args) {
       warning("Mapped 'study' column is not character or factor. Please check data types.")
     }
   }
+  if (is.null(session_config$effect_measure)) {
+    stop("Session configuration missing required field: effect_measure")
+  }
   em <- toupper(session_config$effect_measure)
   # Binary outcomes (OR/RR): map treatment/control schemas
   if (em %in% c("OR","RR")) {
