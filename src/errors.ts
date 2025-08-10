@@ -12,6 +12,13 @@ export class SessionError extends Error {
   }
 }
 
+/**
+ * Represents an error that occurred during R code execution.
+ * 
+ * @property {number | undefined} code - Optional error code returned by the R process.
+ *   This code is typically set when the R process returns a specific error code.
+ *   Possible values depend on the R execution context, and may be undefined if no code is provided.
+ */
 export class RExecutionError extends Error {
   constructor(message: string, public readonly code?: number) {
     super(message);
