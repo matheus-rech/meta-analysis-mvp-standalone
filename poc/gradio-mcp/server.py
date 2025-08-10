@@ -41,7 +41,9 @@ def execute_r(tool: str, args: Dict[str, Any], session_path: str = None, timeout
         raise RuntimeError('R script execution timed out')
 
     if proc.returncode != 0:
-        raise RuntimeError(f'R failed: {stderr or stdout}')
+        # Sanitize error output to avoid leaking sensitive information
+        sanitized_error = "R script failed to execute. Please check your input or contact support."
+        raise RuntimeError(sanitized_error)
 
     try:
         return json.loads(stdout.strip())
