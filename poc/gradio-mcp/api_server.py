@@ -114,7 +114,7 @@ class GenerateReportRequest(BaseModel):
     session_id: str
     format: str = Field(pattern=r"^(html|pdf|word)$")
     include_code: bool = False
-    journal_template: str | None = None
+    journal_template: Optional[str] = None
 
 
 @app.post("/api/generate_report")
