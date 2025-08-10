@@ -76,6 +76,26 @@ jobs:
         for (p in pkgs) { library(p, character.only=TRUE) }
         cat('R packages loaded OK\n')
       shell: Rscript {0}
+    
+    - name: Meta-analysis E2E check (R)
+      run: |
+        source('scripts/adapters/meta_adapter.R')
+        data <- data.frame(
+          study_id = c('S1','S2','S3','S4','S5'),
+          events_treatment = c(10,12,9,15,7),
+          n_treatment = c(100,120,110,130,90),
+          events_control = c(8,15,7,14,6),
+          n_control = c(100,120,110,130,90)
+        )
+        res <- perform_meta_analysis_core(data, method = 'random', measure = 'OR')
+        stopifnot(inherits(res, 'meta'))
+        dir.create('ci-artifacts', showWarnings = FALSE)
+        generate_forest_plot_core(res, 'ci-artifacts/forest.png', 'CI Forest')
+        generate_funnel_plot_core(res, 'ci-artifacts/funnel.png', 'CI Funnel')
+        bias <- assess_publication_bias_core(res)
+        stopifnot(is.list(bias))
+        cat('Meta-analysis E2E OK\n')
+      shell: Rscript {0}
       
     - name: Lint R code
       run: |
