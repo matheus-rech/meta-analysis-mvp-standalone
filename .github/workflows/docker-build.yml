@@ -3,14 +3,14 @@ name: Build and Push Docker Image
 on:
   push:
     branches:
-      - meta
-      - production-grade-features
+
+      - publication-grade-features
     tags:
       - 'v*'
   pull_request:
     branches:
-      - meta
-      - production-grade-features
+
+      - publication-grade-features
   workflow_dispatch:
     inputs:
       push_to_registry:
@@ -65,13 +65,14 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch                # Tag with branch name (e.g., meta, production-grade-features)
+            type=ref,event=branch                # Tag with branch name (e.g., meta, publication-grade-features)
             type=raw,value=latest                # Always tag as 'latest' regardless of branch
             type=ref,event=pr                    # Tag for PR events
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=sha,prefix={{branch}}-
+            # Use a stable, explicit prefix for SHA tags to avoid invalid tags when branch is undefined on PR merges
+            type=sha,prefix=sha-
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -131,8 +132,8 @@ jobs:
           # Wait for container to be healthy
           timeout 60 bash -c 'until docker ps | grep test-container | grep -q healthy; do sleep 2; done' || true
           
-          # Check container logs
-          docker logs test-container
+          # Check container logs (do not fail if container no longer exists)
+          docker logs test-container || true
           
           # Stop container
           docker stop test-container || true
@@ -144,3 +145,8 @@ jobs:
       - name: Test Node.js
         run: |
           docker run --rm ${{ env.IMAGE_NAME }}:latest node -e "console.log('Node version:', process.version)"
+      
+      - name: Clean up test container
+        if: always()
+        run: |
+          docker rm -f test-container || true
