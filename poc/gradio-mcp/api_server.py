@@ -192,7 +192,7 @@ try:
             {
                 "session_id": session_id,
                 "plot_style": plot_style,
-                "confidence_level": float(confidence_level),
+                "confidence_level": confidence_level,
             },
         )
 
