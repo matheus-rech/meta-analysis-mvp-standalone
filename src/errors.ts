@@ -26,9 +26,23 @@ export class RExecutionError extends Error {
   }
 }
 
-export function handleError(error: unknown): { status: string; error: string; details?: any } {
+export function handleError(error: unknown): { status: string; error: string; details?: any; stack?: string } {
   console.error('Error occurred:', error);
-  
+
+  const isDev = process.env.NODE_ENV === 'development';
+  let stack: string | undefined;
+
+  if (isDev && error instanceof Error) {
+    stack = error.stack;
+  }
+
+  return {
+    status: 'error',
+    error: error instanceof Error ? error.message : String(error),
+    ...(stack ? { stack } : {}),
+    details: error instanceof Error && (error as any).details ? (error as any).details : undefined,
+  };
+}
   if (error instanceof ValidationError) {
     return {
       status: 'error',
