@@ -36,13 +36,6 @@ export function handleError(error: unknown): { status: string; error: string; de
     stack = error.stack;
   }
 
-  return {
-    status: 'error',
-    error: error instanceof Error ? error.message : String(error),
-    ...(stack ? { stack } : {}),
-    details: error instanceof Error && (error as any).details ? (error as any).details : undefined,
-  };
-}
   if (error instanceof ValidationError) {
     return {
       status: 'error',
@@ -70,7 +63,9 @@ export function handleError(error: unknown): { status: string; error: string; de
   if (error instanceof Error) {
     return {
       status: 'error',
-      error: error.message
+      error: error.message,
+      ...(stack ? { stack } : {}),
+      details: (error as any).details ? (error as any).details : undefined,
     };
   }
   
