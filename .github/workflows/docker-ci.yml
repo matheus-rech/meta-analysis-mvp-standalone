@@ -3,6 +3,7 @@ name: Docker CI
 on:
   push:
     branches: [ publication-grade-features, integration/** ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ publication-grade-features ]
 
@@ -39,6 +40,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr,prefix=pr-
             type=sha,prefix=sha-
+            type=ref,event=tag
 
       - name: Build and push
         uses: docker/build-push-action@v5
