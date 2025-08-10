@@ -82,7 +82,7 @@ def call_tool(tool: str, args: dict) -> str:
         transport = StdioTransport(server_proc.stdin, server_proc.stdout)
         with ClientSession(transport) as session:
             tools = session.list_tools()
-            if not any(t.name == tool for t in tools):
+            if all(t.name != tool for t in tools):
                 return f"Tool {tool} not available"
             result = session.call_tool(tool, args)
         return json.dumps(result, indent=2)
