@@ -1,54 +1,63 @@
-# ===========================
-# Stage 1: R Dependencies
-# ===========================
-FROM r-base:4.3.2 AS r-deps
-# Install required R packages
-RUN R -e "install.packages(c('jsonlite', 'metafor', 'ggplot2'), repos='https://cloud.r-project.org/', clean=TRUE)" && \
-    rm -rf /tmp/* /var/tmp/* /usr/lib/R/library/*/help /usr/lib/R/library/*/doc
+# Dockerfile for Cursor Background Agent
+# Following https://cursor.com/environment-json-dockerfile.md guidelines
 
-# ===========================
-# Stage 2: Final Image
-# ===========================
-FROM node:18-slim
+FROM rocker/r-ver:4.3.2 AS r-builder
 
-# Install minimal R runtime and essential tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    r-base-core \
+# Install R packages
+RUN R -e "install.packages(c('metafor', 'jsonlite', 'ggplot2', 'markdown', 'rmarkdown', 'knitr'), repos='https://cran.rstudio.com/', dependencies=TRUE)"
+
+# Main stage
+FROM ubuntu:22.04
+
+# Avoid prompts from apt
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    # R runtime dependencies
+    r-base \
+    r-base-dev \
     libcurl4-openssl-dev \
-    libxml2 \
-    libssl3 \
-    git \
+    libssl-dev \
+    libxml2-dev \
+    libfontconfig1-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libjpeg-dev \
+    # Node.js and development tools
     curl \
-    ca-certificates \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    git \
+    nodejs \
+    npm \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy R packages from build stage
-COPY --from=r-deps /usr/local/lib/R/site-library /usr/local/lib/R/site-library
+# Copy R packages from builder
+COPY --from=r-builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 
-# Install only essential global Node.js tools
-RUN npm install -g \
-    typescript@5.7.2 \
-    tsx@4.19.2 \
-    nodemon@3.1.9 \
-    && npm cache clean --force
+# Create non-root user (required for background agents)
+RUN useradd -m -s /bin/bash ubuntu && \
+    echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Create non-root user
-RUN useradd -m -s /bin/bash -u 1000 ubuntu
-
-# Set working directory
+# Set working directory to user home (required for background agents)
 WORKDIR /home/ubuntu
+
+# Install Node.js dependencies globally
+RUN npm install -g typescript tsx nodemon @types/node
 
 # Switch to non-root user
 USER ubuntu
 
-# Simple health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node --version && R --version || exit 1
-
-# Environment setup
-ENV NODE_ENV=production
+# Set environment variables
+ENV NODE_ENV=development
+ENV R_LIBS_USER=/home/ubuntu/R/library
 ENV PATH="/home/ubuntu/.local/bin:${PATH}"
 
-# Note: Project code will be cloned by the agent
-# This provides the minimal environment for meta-analysis tasks
+# Create R library directory for user packages
+RUN mkdir -p /home/ubuntu/R/library
+
+# Note: Project code will be cloned by the agent - DO NOT COPY CODE
+# This follows the Cursor background agent best practices

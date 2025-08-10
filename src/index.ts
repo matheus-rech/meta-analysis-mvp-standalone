@@ -259,7 +259,7 @@ const toolValidationSchemas: Record<string, (args: any) => void> = {
 };
 
 // Handle tool calls
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
   try {
     const { name, arguments: args } = request.params;
     // Route debug logs to stderr to avoid contaminating stdout JSON-RPC
@@ -415,12 +415,12 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 // Handle uncaught errors
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', (error: Error) => {
   console.error('Uncaught exception:', error);
   shutdown('uncaughtException');
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
   console.error('Unhandled rejection at:', promise, 'reason:', reason);
   shutdown('unhandledRejection');
 });

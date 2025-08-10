@@ -40,6 +40,16 @@ perform_meta_analysis <- function(args) {
     stop("Session configuration not found.")
   }
   session_config <- fromJSON(session_config_path)
+  # Normalize field names (camelCase vs snake_case)
+  if (!is.null(session_config$effect_measure) && is.null(session_config$effectMeasure)) {
+    session_config$effectMeasure <- session_config$effect_measure
+  }
+  if (!is.null(session_config$analysis_model) && is.null(session_config$analysisModel)) {
+    session_config$analysisModel <- session_config$analysis_model
+  }
+  if (!is.null(session_config$study_type) && is.null(session_config$studyType)) {
+    session_config$studyType <- session_config$study_type
+  }
   
   # Convert data format if needed
   analysis_data <- convert_metafor_to_meta_format(loaded_data, session_config)
@@ -94,7 +104,7 @@ perform_meta_analysis <- function(args) {
       ),
       p_value = p_value,
       heterogeneity = list(
-        i_squared = paste0(round(meta_result$I2 * 100, 1), "%"),
+        i_squared = paste0(round(meta_result$I2, 1), "%"),
         tau_squared = meta_result$tau2,
         q_test = list(
           statistic = meta_result$Q,
@@ -125,7 +135,7 @@ perform_meta_analysis <- function(args) {
     }
     
     # Add interpretation based on heterogeneity
-    i2_value <- meta_result$I2 * 100
+    i2_value <- meta_result$I2
     if (i2_value < 25) {
       summary_info$heterogeneity$interpretation <- "Low heterogeneity"
     } else if (i2_value < 50) {
