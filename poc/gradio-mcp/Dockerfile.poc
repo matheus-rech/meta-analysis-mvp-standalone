@@ -32,10 +32,11 @@ ENV RETICULATE_PYTHON="/opt/venv/bin/python"
 
 COPY poc/gradio-mcp/app.py ./app.py
 COPY poc/gradio-mcp/server.py ./server.py
+COPY poc/gradio-mcp/api_server.py ./api_server.py
 COPY scripts ./scripts
 COPY templates ./templates
 
 EXPOSE 7860
 RUN . /opt/venv/bin/activate && pip install jupyterlab
 
-CMD ["bash", "-lc", ". /opt/venv/bin/activate && python app.py"]
+CMD ["bash", "-lc", ". /opt/venv/bin/activate && uvicorn api_server:app --host 0.0.0.0 --port 7860"]
