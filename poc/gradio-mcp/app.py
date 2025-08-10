@@ -139,7 +139,7 @@ def ui_forest(session_id: str, style: str, conf: float) -> str:
         {
             "session_id": session_id,
             "plot_style": style,
-            "confidence_level": float(conf),
+            "confidence_level": conf,
         },
     )
 
