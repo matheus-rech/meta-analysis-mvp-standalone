@@ -135,8 +135,9 @@ jobs:
         }
       shell: Rscript {0}
       
-    - name: Claude Code Action
-      uses: anthropics/claude-code-action@v1
+    - name: Claude Code Action (optional)
+      if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+      uses: anthropics/claude-code-action@main
       with:
         api-key: ${{ secrets.ANTHROPIC_API_KEY }}
 
