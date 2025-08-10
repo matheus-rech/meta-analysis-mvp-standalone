@@ -19,6 +19,24 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
+    
+    - name: Install system libraries for R packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libcurl4-openssl-dev \
+          libssl-dev \
+          libxml2-dev \
+          libfontconfig1-dev \
+          libharfbuzz-dev \
+          libfribidi-dev \
+          libfreetype6-dev \
+          libpng-dev \
+          libtiff5-dev \
+          libjpeg-dev \
+          pandoc \
+          python3 \
+          python3-venv
         
     - name: Install dependencies
       run: npm ci
@@ -35,11 +53,29 @@ jobs:
         r-version: 'release'
         use-public-rspm: true
 
-    - name: Setup R dependencies (lintr)
+    - name: Setup R dependencies (project + lintr)
       uses: r-lib/actions/setup-r-dependencies@v2
       with:
-        extra-packages: any::lintr
+        extra-packages: >-
+          any::lintr
+          any::meta
+          any::metafor
+          any::jsonlite
+          any::ggplot2
+          any::rmarkdown
+          any::knitr
+          any::readxl
+          any::base64enc
+          any::DT
+          any::reticulate
         cache: true
+
+    - name: Verify R packages
+      run: |
+        pkgs <- c('meta','metafor','jsonlite','ggplot2','rmarkdown','knitr','readxl','base64enc','DT','reticulate')
+        for (p in pkgs) { library(p, character.only=TRUE) }
+        cat('R packages loaded OK\n')
+      shell: Rscript {0}
       
     - name: Lint R code
       run: |
