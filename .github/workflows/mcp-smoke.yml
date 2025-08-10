@@ -14,5 +14,18 @@ jobs:
           node-version: '18'
       - run: npm ci
       - run: npm run build
-      - name: Run MCP inspector (handshake)
+      - name: Run MCP inspector (handshake against local node)
         run: npx --yes @modelcontextprotocol/inspector@latest --ci node build/index.js
+      - name: Pull Docker image
+        run: docker pull docker.io/mmrech/meta-analysis-mvp:latest
+      - name: Run container and test inspector handshake
+        run: |
+          docker run -d --name mcp -v "$PWD/sessions:/app/sessions" docker.io/mmrech/meta-analysis-mvp:latest
+          # wait briefly for container to be ready
+          sleep 2
+          # Exec inspector inside container context via docker exec attaching stdio
+          npx --yes @modelcontextprotocol/inspector@latest --ci "docker" exec -i mcp node /app/build/index.js
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker rm -f mcp || true
