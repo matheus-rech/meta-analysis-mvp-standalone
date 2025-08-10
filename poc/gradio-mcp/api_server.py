@@ -41,7 +41,7 @@ class UploadRequest(BaseModel):
     csv_text: str | None = None
     validation_level: str = Field(pattern=r"^(basic|comprehensive)$")
 
-    @root_validator
+    @model_validator(mode='before')
     def check_mutually_exclusive(cls, values):
         data_content = values.get("data_content")
         csv_text = values.get("csv_text")
