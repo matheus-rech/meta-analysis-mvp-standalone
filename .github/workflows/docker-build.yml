@@ -3,14 +3,12 @@ name: Build and Push Docker Image
 on:
   push:
     branches:
-
-      - publication-grade-features
+      - meta
     tags:
       - 'v*'
   pull_request:
     branches:
-
-      - publication-grade-features
+      - meta
   workflow_dispatch:
     inputs:
       push_to_registry:
