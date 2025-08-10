@@ -129,3 +129,92 @@ def get_session_status(req: SessionStatusRequest):
         return JSONResponse(content={"status": "ok", "result": result})
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+# Optional: expose the same tools via fastmcp under /mcp
+try:
+    from fastmcp import FastMCP
+
+    fmcp = FastMCP()
+
+    @fmcp.tool("health_check")
+    def fmcp_health_check(detailed: bool = False):
+        return call_tool("health_check", {"detailed": bool(detailed)})
+
+    @fmcp.tool("initialize_meta_analysis")
+    def fmcp_initialize(name: str, study_type: str, effect_measure: str, analysis_model: str):
+        return call_tool(
+            "initialize_meta_analysis",
+            {
+                "name": name,
+                "study_type": study_type,
+                "effect_measure": effect_measure,
+                "analysis_model": analysis_model,
+            },
+        )
+
+    @fmcp.tool("upload_study_data")
+    def fmcp_upload(session_id: str, data_format: str, data_content: str, validation_level: str):
+        return call_tool(
+            "upload_study_data",
+            {
+                "session_id": session_id,
+                "data_format": data_format,
+                "data_content": data_content,
+                "validation_level": validation_level,
+            },
+        )
+
+    @fmcp.tool("perform_meta_analysis")
+    def fmcp_perform(session_id: str, heterogeneity_test: bool = True, publication_bias: bool = True, sensitivity_analysis: bool = False):
+        return call_tool(
+            "perform_meta_analysis",
+            {
+                "session_id": session_id,
+                "heterogeneity_test": bool(heterogeneity_test),
+                "publication_bias": bool(publication_bias),
+                "sensitivity_analysis": bool(sensitivity_analysis),
+            },
+        )
+
+    @fmcp.tool("generate_forest_plot")
+    def fmcp_forest(session_id: str, plot_style: str = "classic", confidence_level: float = 0.95):
+        return call_tool(
+            "generate_forest_plot",
+            {
+                "session_id": session_id,
+                "plot_style": plot_style,
+                "confidence_level": float(confidence_level),
+            },
+        )
+
+    @fmcp.tool("assess_publication_bias")
+    def fmcp_bias(session_id: str, methods: list[str]):
+        return call_tool(
+            "assess_publication_bias",
+            {
+                "session_id": session_id,
+                "methods": methods,
+            },
+        )
+
+    @fmcp.tool("generate_report")
+    def fmcp_report(session_id: str, format: str = "html", include_code: bool = False):
+        return call_tool(
+            "generate_report",
+            {
+                "session_id": session_id,
+                "format": format,
+                "include_code": bool(include_code),
+            },
+        )
+
+    @fmcp.tool("get_session_status")
+    def fmcp_status(session_id: str):
+        return call_tool("get_session_status", {"session_id": session_id})
+
+    # Mount fastmcp router at /mcp
+    app.include_router(fmcp.router, prefix="/mcp")
+except Exception as _e:
+    # fastmcp not available; plain FastAPI routes remain available
+    pass
