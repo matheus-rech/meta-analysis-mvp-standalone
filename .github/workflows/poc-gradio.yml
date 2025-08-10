@@ -2,6 +2,8 @@ name: PoC Gradio Build
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ poc/gradio-chat ]
 
 jobs:
   build-poc:

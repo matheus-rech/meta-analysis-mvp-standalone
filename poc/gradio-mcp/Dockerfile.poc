@@ -4,7 +4,6 @@ FROM rocker/r2u:24.04
 # System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-venv python3-pip \
-    nodejs npm \
     libcurl4-openssl-dev libssl-dev libxml2-dev \
     libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
     libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
@@ -30,13 +29,12 @@ RUN python3 -m venv /opt/venv && \
     pip install -r requirements-poc.txt
 ENV PATH="/opt/venv/bin:${PATH}"
 
-# Copy node build (expected to be mounted or baked in higher-level image)
-# For HF Spaces, we’ll run npm build during startup if needed.
-COPY build ./build
 COPY poc/gradio-mcp/app.py ./app.py
+COPY poc/gradio-mcp/server.py ./server.py
 COPY scripts ./scripts
 COPY templates ./templates
-COPY package*.json ./
 
 EXPOSE 7860
+RUN . /opt/venv/bin/activate && pip install jupyterlab
+
 CMD ["bash", "-lc", ". /opt/venv/bin/activate && python app.py"]

@@ -6,21 +6,15 @@ from typing import Optional
 
 import gradio as gr
 from mcp import ClientSession, StdioTransport
-from rpy2 import robjects
+import base64
 
-# Ensure rpy2 basics
-robjects.r("library(jsonlite)")
-robjects.r("library(meta)")
-robjects.r("library(metafor)")
-robjects.r("library(ggplot2)")
-robjects.r("library(knitr)")
-robjects.r("library(rmarkdown)")
-robjects.r("library(readxl)")
-robjects.r("library(base64enc)")
-robjects.r("library(DT)")
-robjects.r("library(reticulate)")
+# Optional: ensure R packages are importable via rpy2 if needed elsewhere
+try:
+    from rpy2 import robjects  # noqa: F401
+except Exception:
+    robjects = None
 
-SERVER_CMD = ["node", "build/index.js"]
+SERVER_CMD = ["python", "poc/gradio-mcp/server.py"]
 
 server_proc: Optional[subprocess.Popen] = None
 server_lock = threading.Lock()
@@ -83,8 +77,7 @@ def ui_init(name: str, study_type: str, effect_measure: str, analysis_model: str
 
 def ui_upload(session_id: str, data: str, data_format: str, validation_level: str) -> str:
     # Accept CSV content directly in the textbox for PoC
-    encoded = robjects.r["base64_enc"](data).r_repr()
-    encoded = json.loads(encoded)
+    encoded = base64.b64encode(data.encode("utf-8")).decode("ascii")
     return call_tool(
         "upload_study_data",
         {
