@@ -124,12 +124,25 @@ upload_study_data <- function(args) {
   
   # Canonicalize and map common column schemas to expected names
   names(loaded_data) <- tolower(names(loaded_data))
-  # Map study identifiers if needed
+  # Map study identifiers if needed, with warnings and type validation
   if (!"study" %in% names(loaded_data)) {
-    if ("study_id" %in% names(loaded_data)) loaded_data$study <- loaded_data$study_id
-    else if ("studlab" %in% names(loaded_data)) loaded_data$study <- loaded_data$studlab
-    else if ("id" %in% names(loaded_data)) loaded_data$study <- loaded_data$id
-    else if ("author" %in% names(loaded_data)) loaded_data$study <- loaded_data$author
+    if ("study_id" %in% names(loaded_data)) {
+      loaded_data$study <- loaded_data$study_id
+      # No warning for primary mapping
+    } else if ("studlab" %in% names(loaded_data)) {
+      loaded_data$study <- loaded_data$studlab
+      warning("Mapped 'studlab' to 'study' as study identifier. Please check data consistency.")
+    } else if ("id" %in% names(loaded_data)) {
+      loaded_data$study <- loaded_data$id
+      warning("Mapped 'id' to 'study' as study identifier. Please check data consistency.")
+    } else if ("author" %in% names(loaded_data)) {
+      loaded_data$study <- loaded_data$author
+      warning("Mapped 'author' to 'study' as study identifier. Please check data consistency.")
+    }
+    # Validate type of mapped study column
+    if ("study" %in% names(loaded_data) && !(is.character(loaded_data$study) || is.factor(loaded_data$study))) {
+      warning("Mapped 'study' column is not character or factor. Please check data types.")
+    }
   }
   em <- toupper(session_config$effect_measure)
   # Binary outcomes (OR/RR): map treatment/control schemas
