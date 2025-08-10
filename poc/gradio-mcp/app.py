@@ -92,7 +92,7 @@ def call_tool(tool: str, args: dict) -> str:
 
 
 def ui_health_check(detailed: bool) -> str:
-    return call_tool("health_check", {"detailed": bool(detailed)})
+    return call_tool("health_check", {"detailed": detailed})
 
 
 def ui_init(name: str, study_type: str, effect_measure: str, analysis_model: str) -> str:
