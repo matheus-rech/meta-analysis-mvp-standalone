@@ -8,6 +8,9 @@ on:
 jobs:
   build-poc:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up QEMU
@@ -15,15 +18,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to Docker Hub
-        if: ${{ secrets.DOCKER_HUB_USERNAME != '' }}
+        if: ${{ env.DOCKER_HUB_USERNAME }}
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ env.DOCKER_HUB_TOKEN }}
       - name: Build PoC image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: poc/gradio-mcp/Dockerfile.poc
-          push: ${{ secrets.DOCKER_HUB_USERNAME != '' }}
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/meta-analysis-mvp-poc:latest
+          push: ${{ env.DOCKER_HUB_USERNAME }}
+          tags: ${{ env.DOCKER_HUB_USERNAME }}/meta-analysis-mvp-poc:latest
