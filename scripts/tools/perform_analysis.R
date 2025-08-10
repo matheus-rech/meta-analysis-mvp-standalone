@@ -41,15 +41,7 @@ perform_meta_analysis <- function(args) {
   }
   session_config <- fromJSON(session_config_path)
   # Normalize field names (camelCase vs snake_case)
-  if (!is.null(session_config$effect_measure) && is.null(session_config$effectMeasure)) {
-    session_config$effectMeasure <- session_config$effect_measure
-  }
-  if (!is.null(session_config$analysis_model) && is.null(session_config$analysisModel)) {
-    session_config$analysisModel <- session_config$analysis_model
-  }
-  if (!is.null(session_config$study_type) && is.null(session_config$studyType)) {
-    session_config$studyType <- session_config$study_type
-  }
+  session_config <- normalize_field_names(session_config)
   
   # Convert data format if needed
   analysis_data <- convert_metafor_to_meta_format(loaded_data, session_config)
