@@ -12,7 +12,11 @@ class Config {
   
   constructor() {
     this.projectRoot = path.resolve(__dirname, '..');
-    this.sessionsDir = path.join(this.projectRoot, 'sessions');
+    // Allow override via env var, fallback to projectRoot/sessions
+    const envDir = process.env.SESSIONS_DIR;
+    this.sessionsDir = envDir && envDir.trim().length > 0
+      ? path.resolve(envDir)
+      : path.join(this.projectRoot, 'sessions');
   }
   
   async ensureDirectories(): Promise<void> {

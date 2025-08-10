@@ -114,14 +114,15 @@ class SessionManager {
   
   updateSessionStatus(sessionId: string, status: Session['status']): void {
     const session = this.sessions.get(sessionId);
-    if (session) {
-      session.status = status;
-      session.updatedAt = new Date().toISOString();
-      
-      // Save updated session
-      const metadataPath = path.join(this.getSessionPath(sessionId), 'session.json');
-      fs.writeFileSync(metadataPath, JSON.stringify(session, null, 2));
+    if (!session) {
+      throw new SessionError(`Session with ID ${sessionId} not found.`);
     }
+    session.status = status;
+    session.updatedAt = new Date().toISOString();
+    
+    // Save updated session
+    const metadataPath = path.join(this.getSessionPath(sessionId), 'session.json');
+    fs.writeFileSync(metadataPath, JSON.stringify(session, null, 2));
   }
 }
 
