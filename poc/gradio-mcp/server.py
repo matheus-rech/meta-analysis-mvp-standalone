@@ -9,7 +9,9 @@ from typing import Any, Dict
 # Minimal MCP server in Python over stdio
 # It dispatches tool calls to the existing R scripts via Rscript mcp_tools.R
 
-SCRIPTS_ENTRY = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'scripts', 'entry', 'mcp_tools.R')
+_HERE = os.path.dirname(__file__)
+_PROJ = os.path.abspath(os.path.join(_HERE, '..', '..'))
+SCRIPTS_ENTRY = os.path.join('/app' if os.path.exists('/app/scripts') else _PROJ, 'scripts', 'entry', 'mcp_tools.R')
 
 TOOLS = [
     'health_check',

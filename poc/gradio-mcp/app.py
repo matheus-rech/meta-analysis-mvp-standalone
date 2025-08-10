@@ -41,7 +41,8 @@ except Exception as e:
     PY_READY = False
     PY_STATUS = f"Python init failed: {e}\n{traceback.format_exc()}"
 
-SERVER_CMD = ["python", "poc/gradio-mcp/server.py"]
+SERVER_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "server.py")
+SERVER_CMD = ["python", SERVER_SCRIPT_PATH]
 
 server_proc: Optional[subprocess.Popen] = None
 server_lock = threading.Lock()
@@ -77,13 +78,17 @@ def stop_server() -> None:
 def call_tool(tool: str, args: dict) -> str:
     start_server()
     assert server_proc is not None
-    transport = StdioTransport(server_proc.stdin, server_proc.stdout)
-    with ClientSession(transport) as session:
-        tools = session.list_tools()
-        if not any(t.name == tool for t in tools):
-            return f"Tool {tool} not available"
-        result = session.call_tool(tool, args)
-    return json.dumps(result, indent=2)
+    try:
+        transport = StdioTransport(server_proc.stdin, server_proc.stdout)
+        with ClientSession(transport) as session:
+            tools = session.list_tools()
+            if not any(t.name == tool for t in tools):
+                return f"Tool {tool} not available"
+            result = session.call_tool(tool, args)
+        return json.dumps(result, indent=2)
+    finally:
+        # Ensure we don't leak a background server in PoC
+        stop_server()
 
 
 def ui_health_check(detailed: bool) -> str:
