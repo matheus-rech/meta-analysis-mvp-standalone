@@ -84,7 +84,7 @@ class ForestPlotRequest(BaseModel):
     session_id: str
     plot_style: str = Field(pattern=r"^(classic|modern|journal_specific)$")
     confidence_level: confloat(gt=0, lt=1) = 0.95
-    custom_labels: dict | None = None
+    custom_labels: Optional[dict] = None
 
 
 @app.post("/api/generate_forest_plot")
