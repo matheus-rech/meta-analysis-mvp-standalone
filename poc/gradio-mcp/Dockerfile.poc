@@ -23,11 +23,10 @@ WORKDIR /app
 COPY poc/gradio-mcp/requirements-poc.txt ./
 
 # Python deps
-RUN python3 -m venv /opt/venv && \
-    . /opt/venv/bin/activate && \
-    pip install --upgrade pip && \
-    pip install -r requirements-poc.txt
+RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"
+RUN python -m pip install --upgrade pip && \
+    python -m pip install -r requirements-poc.txt
 ENV RETICULATE_PYTHON="/opt/venv/bin/python"
 
 COPY poc/gradio-mcp/app.py ./app.py
@@ -37,6 +36,6 @@ COPY scripts ./scripts
 COPY templates ./templates
 
 EXPOSE 7860
-RUN . /opt/venv/bin/activate && pip install jupyterlab
+RUN python -m pip install jupyterlab
 
-CMD ["bash", "-lc", ". /opt/venv/bin/activate && uvicorn api_server:app --host 0.0.0.0 --port 7860"]
+CMD ["uvicorn", "api_server:app", "--host", "0.0.0.0", "--port", "7860"]
