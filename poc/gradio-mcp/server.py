@@ -53,18 +53,19 @@ def execute_r(tool: str, args: Dict[str, Any], session_path: str = None, timeout
 # For PoC we implement only list_tools and call_tool methods
 
 def list_tools_resp(request_id):
-    tools = []
-    for name in [
-        'health_check',
-        'initialize_meta_analysis',
-        'upload_study_data',
-        'perform_meta_analysis',
-        'generate_forest_plot',
-        'assess_publication_bias',
-        'generate_report',
-        'get_session_status',
-    ]:
-        tools.append({'name': name, 'description': name})
+    tools = [
+        {'name': name, 'description': name}
+        for name in [
+            'health_check',
+            'initialize_meta_analysis',
+            'upload_study_data',
+            'perform_meta_analysis',
+            'generate_forest_plot',
+            'assess_publication_bias',
+            'generate_report',
+            'get_session_status',
+        ]
+    ]
     return {
         'jsonrpc': '2.0',
         'id': request_id,
