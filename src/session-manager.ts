@@ -94,7 +94,22 @@ class SessionManager {
   }
   
   getSession(sessionId: string): Session | undefined {
-    return this.sessions.get(sessionId);
+    let session = this.sessions.get(sessionId);
+    if (session) return session;
+    // Try to load from disk
+    const sessionDir = this.getSessionPath(sessionId);
+    const metadataPath = path.join(sessionDir, 'session.json');
+    if (fs.existsSync(metadataPath)) {
+      try {
+        const sessionData = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+        this.sessions.set(sessionData.id, sessionData);
+        return sessionData;
+      } catch (error) {
+        console.error(`Failed to load session from disk for id ${sessionId}:`, error);
+        return undefined;
+      }
+    }
+    return undefined;
   }
   
   updateSessionStatus(sessionId: string, status: Session['status']): void {
