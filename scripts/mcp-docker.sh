@@ -10,6 +10,12 @@ IMAGE_NAME="${MCP_IMAGE:-meta-analysis-mvp}"
 IMAGE_TAG="${MCP_TAG:-latest}"
 IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
 
+# Preconditions
+if ! command -v docker >/dev/null 2>&1; then
+  echo "[mcp-docker] Docker CLI not found. Please install Docker Desktop or Docker Engine." >&2
+  exit 1
+fi
+
 # Resolve project root as the directory containing this script's parent
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -22,9 +28,9 @@ mkdir -p "$HOST_SESSIONS_DIR"
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   echo "[mcp-docker] Image not found: $IMAGE; attempting docker pull..." >&2
   if ! docker pull "$IMAGE" >/dev/null 2>&1; then
-    echo "[mcp-docker] Pull failed; building image locally as $IMAGE_NAME:latest" >&2
-    docker build -t "$IMAGE_NAME:latest" "$PROJECT_ROOT"
-    IMAGE_TAG="latest"
+    IMAGE_TAG="${MCP_TAG:-latest}"
+    echo "[mcp-docker] Pull failed; building image locally as $IMAGE_NAME:$IMAGE_TAG" >&2
+    docker build -t "$IMAGE_NAME:$IMAGE_TAG" "$PROJECT_ROOT"
     IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
   fi
 fi

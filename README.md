@@ -148,7 +148,7 @@ docker build -t meta-analysis-mvp .
 # or pull your registry image if available: docker pull <account>/meta-analysis-mvp:latest
 ```
 
-2) Configure Claude Desktop to use the wrapper `scripts/mcp-docker.sh`:
+2) Configure Claude Desktop to use the wrapper `scripts/mcp-docker.sh` (path relative to your checked-out project root `meta-analysis-mvp-standalone`):
 
 ```json
 {
