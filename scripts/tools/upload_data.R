@@ -160,6 +160,7 @@ upload_study_data <- function(args) {
       loaded_data$n1     <- loaded_data[["n.e"]]
       loaded_data$event2 <- loaded_data[["event.c"]]
       loaded_data$n2     <- loaded_data[["n.c"]]
+      warning("Mapped RevMan-style columns (event.e/n.e/event.c/n.c) to event1/n1/event2/n2. Please verify.")
     }
   }
   # Continuous outcomes (MD/SMD)
@@ -178,6 +179,7 @@ upload_study_data <- function(args) {
       loaded_data$mean2 <- loaded_data[["mean.c"]]
       loaded_data$sd2   <- loaded_data[["sd.c"]]
       loaded_data$n2    <- loaded_data[["n.c"]]
+      warning("Mapped RevMan-style columns (mean.e/sd.e/n.e/mean.c/sd.c/n.c) to mean1/sd1/n1/mean2/sd2/n2. Please verify.")
     }
   }
   # Single-arm proportion: map events/n

@@ -54,11 +54,16 @@ export async function executeRScript(
       }
       
       try {
-        const result = JSON.parse(stdout.trim());
+        const trimmed = stdout.trim();
+        const result = JSON.parse(trimmed);
         resolve(result);
       } catch (parseError) {
-        // If not JSON, return raw output
-        resolve({ output: stdout.trim() });
+        // Log parse error and return structured fallback
+        console.error('Failed to parse R output as JSON:', {
+          error: (parseError as Error).message,
+          stderr: stderr?.slice(0, 2000),
+        });
+        resolve({ output: stdout.trim(), stderr: stderr.trim() });
       }
     });
     
