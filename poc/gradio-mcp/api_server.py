@@ -197,7 +197,7 @@ try:
         )
 
     @fmcp.tool("assess_publication_bias")
-    def fmcp_bias(session_id: str, methods: list[str]):
+    def fmcp_bias(session_id: str, methods: List[str]):
         return call_tool(
             "assess_publication_bias",
             {
