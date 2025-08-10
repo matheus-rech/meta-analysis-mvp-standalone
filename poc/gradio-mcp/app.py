@@ -161,7 +161,7 @@ def ui_report(session_id: str, fmt: str, include_code: bool) -> str:
         {
             "session_id": session_id,
             "format": fmt,
-            "include_code": bool(include_code),
+            "include_code": include_code,
         },
     )
 
