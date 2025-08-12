@@ -41,6 +41,11 @@ RUN apt-get update && \
       pandoc && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Python 3.12 development headers for rpy2 (and build-essential for compiling)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3.12-dev build-essential && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy build artifacts and runtime deps
